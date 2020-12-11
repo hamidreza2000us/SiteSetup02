@@ -1,0 +1,32 @@
+---
+#To run this script please refer to the create-BasicVM.yml file for descriptions
+- name: Upload Image file to RHV
+  hosts: rhvh01.myhost.com
+  tasks:
+  - include_vars: ovirt_variables.yml
+
+  - name: Obtain SSO token with using username/password credentials
+    ovirt_auth:
+      url: "{{ RHVMURL }}"
+      username: "{{ RHVMUser }}"
+      ca_file: "{{ RHVMCA }}"
+      password: "{{ RHVMPass }}"
+
+
+  - ovirt_disk:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ item }}"
+      format: raw
+      size: 10GiB
+      image_path: "{{ IsoPath }}{{ item }}"
+      storage_domain: "{{ VMStorageDomain }}"
+      wait: true
+      bootable: true
+      content_type: iso
+    loop:
+      - rhel-8.3-x86_64-dvd.iso
+      - satellite-6.8.0-rhel-7-x86_64-dvd.iso
+      - rhel-server-7.9-x86_64-dvd.iso
+...
+
+

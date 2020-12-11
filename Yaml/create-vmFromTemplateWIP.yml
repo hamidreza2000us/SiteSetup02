@@ -1,0 +1,72 @@
+---
+#To run this script please refer to the create-barevm-v1.yml file for descriptions
+- name: Create Ovirt VM based on a cow template
+  hosts: rhvh01.myhost.com
+  tasks:
+  - include_vars: ovirt_variables.yml
+
+  - name: Obtain SSO token with using username/password credentials
+    ovirt_auth:
+      url: "{{ RHVMURL }}"
+      username: "{{ RHVMUser }}"
+      ca_file: "{{ RHVMCA }}"
+      password: "{{ RHVMPass }}"
+
+  - name: fetch keys
+    shell: cat /root/.ssh/id_rsa.pub
+    register: ssh_keys
+
+  - ovirt_vm:
+      auth: "{{ ovirt_auth }}"
+      cluster: Default
+      name: "{{ VMName }}"
+      comment: "{{ VMComment }}"
+      description: "{{ VMDescription }}"
+      template: "{{ VMTempate }}"
+      memory: "{{ VMMemory }}"
+      cpu_cores: "{{ VMCore }}"
+      cpu_sockets: "{{ VMSocket }}"
+      type: server
+      state: running
+      cd_iso: "{{ VMISO }}"
+      operating_system: "{{ VMOS }}"
+      nics:
+        - name: nic1
+      cloud_init_persist: false
+      cloud_init:
+        nic_boot_protocol: static
+        nic_name: "{{ VNNIC }}"
+        nic_ip_address: "{{ VMIP }}"
+        nic_netmask: "{{ VMNM }}"
+        nic_gateway: "{{ VMGW }}"
+        dns_servers: "{{ VMDNS }}"
+        nic_on_boot: true
+        authorized_ssh_keys : "{{ ssh_keys.stdout }}"
+        timezone: Asia/Tehran
+        host_name: "{{ HostName }}"
+        custom_script: |
+          runcmd:
+            - mkdir /mnt/cdrom
+          #mounts:
+          #  - [ /dev/sr1, /mnt/cdrom, iso9660, "loop,ro" ]
+          yum_repos:
+            appstream:
+              name: appstream
+              baseurl: file:///mnt/cdrom/AppStream
+              gpgcheck: false
+              enabled: yes
+            baseos:
+              name: baseos
+              baseurl: file:///mnt/cdrom/BaseOS
+              gpgcheck: false
+              enabled: yes
+          #runcmd:
+            #  - sudo mount -o loop,ro -t iso9660 /dev/sr0 /mnt
+          #packages:
+          #  - tcpdump
+          #  - telnet
+        user_name: root
+        root_password: "{{ VMPass }}"
+...
+
+

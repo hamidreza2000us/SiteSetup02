@@ -1,0 +1,75 @@
+---
+#To run this script please refer to the create-barevm-v1.yml file for descriptions
+- name: Create Ovirt VM based on a cow template
+  hosts: rhvh01.myhost.com
+  tasks:
+  - include_vars: ovirt_variables.yml
+
+  - name: Obtain SSO token with using username/password credentials
+    ovirt_auth:
+      url: "{{ RHVMURL }}"
+      username: "{{ RHVMUser }}"
+      ca_file: "{{ RHVMCA }}"
+      password: "{{ RHVMPass }}"
+
+
+  - ovirt_vm:
+      auth: "{{ ovirt_auth }}"
+      cluster: Default
+      name: "{{ VMName }}"
+      comment: "{{ VMComment }}"
+      description: "{{ VMDescription }}"
+      timezone: "{{ VMTimeZone }}"
+      soundcard_enabled: no
+      memory: "{{ VMMemory }}"
+      memory_guaranteed: 1GiB
+      cpu_cores: "{{ VMCore }}"
+      cpu_sockets: "{{ VMSocket }}"
+      type: server
+      operating_system: "{{ VMOS }}"
+      nics:
+        - name: nic1
+
+  - ovirt_disk:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ ImageName }}"
+      vm_name: "{{ VMName }}"
+      size: "{{ VMDiskSize }}"
+      format: cow
+      bootable: yes
+      interface: virtio_scsi
+      storage_domain: "{{ VMStorageDomain }}"
+
+  - ovirt_nic:
+      auth: "{{ ovirt_auth }}"
+      state: present
+      vm: "{{ VMName }}"
+      name: nic1
+      interface: virtio
+      profile: "{{ VMNetProfile }}"
+      network: "{{ VMNetNetwork }}"
+
+  - name: fetch keys
+    shell: cat /root/.ssh/id_rsa.pub
+    register: ssh_keys
+
+  - ovirt_vm:
+      auth: "{{ ovirt_auth }}"
+      name: "{{ VMName }}"
+      state: running
+      cloud_init_persist: true
+      cloud_init:
+        authorized_ssh_keys : "{{ ssh_keys.stdout }}"
+        timezone: Asia/Tehran
+        host_name: "{{ HostName }}"
+        custom_script: |
+          write_files:
+           - content: |
+               Hello, world!
+             path: /tmp/greeting.txt
+             permissions: '0644'
+        user_name: root
+        root_password: "{{ VMPass }}"
+...
+
+
