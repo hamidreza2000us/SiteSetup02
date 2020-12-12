@@ -1,6 +1,12 @@
 #Copy SiteSetup to the /root
+WEBIP=192.168.1.111
 IDMIP=192.168.1.112
 SATIP=192.168.1.113
+
+ansible-playbook -i .inventory create-vmFromTemplateWIP-WebServer.yml -e VMName=web -e VMMemory=4GiB -e VMCore=4  \
+-e HostName=web.myhost.com -e VMTempate=Template8.3 -e VMISO=rhel-8.3-x86_64-dvd.iso -e VMIP=${WEBIP}
+
+
 mkdir -p ~/SiteSetup/{Backups,Files,Images,ISOs,RPMs,Yaml}
 cd /root/SiteSetup/Yaml
 ansible-playbook -i .inventory uploadImage.yml
@@ -85,10 +91,26 @@ cd /root/SiteSetup/Yaml
 ansible-playbook -i .inventory create-vmFromImage.yml -e VMName=Template7.9 -e VMMemory=2GiB \
 -e VMCore=1 -e ImageName=rhel-server-7.9-x86_64-kvm.qcow2 -e HostName=template7.9.myhost.com
 ansible-playbook -i .inventory create-template.yml -e VMName=Template7.9 -e VMTempate=Template7.9
-ansible-playbook -i .inventory create-vmFromTemplateWIP-satellite.yml -e VMName=satellite -e VMMemory=16GiB -e VMCore=6 -e VMDiskSize=200GiB \
+ansible-playbook -i .inventory create-vmFromTemplateWIP-satellite.yml -e VMName=satellite -e VMMemory=16GiB -e VMCore=6 -e VMDiskSize=100GiB \
 -e HostName=satellite.myhost.com -e VMTempate=Template7.9 -e VMISO=rhel-server-7.9-x86_64-dvd.iso -e VMIP=${SATIP} -e VMDNS=${IDMIP}
-ssh -o StrictHostKeyChecking=no ${SATIP}
-ssh -o StrictHostKeyChecking=no ${SATIP} "mount -o loop,ro /dev/sr1 /mnt/cdrom"
+
+sed -i "/${SATIP}/d" /root/.ssh/known_hosts
+ssh -o StrictHostKeyChecking=no ${SATIP} /bin/bash << EOF
+mount -o loop,ro /dev/sr1 /mnt/cdrom
+yum -y install lvm2
+parted -s -a optimal /dev/sdb unit MiB mklabel msdos mkpart primary xfs '0%' '100%' 
+pvcreate /dev/sdb1;
+vgcreate VG01 /dev/sdb1;
+lvcreate -n var -l 100%FREE VG01;
+mkfs.xfs /dev/mapper/VG01-var
+mkdir /mnt/temp;
+mount /dev/mapper/VG01-var /mnt/temp;
+cp -an /var/* /mnt/temp/;
+umount /mnt/temp;
+echo "/dev/mapper/VG01-var /var xfs defaults 0 0 " >> /etc/fstab
+mount -a;
+EOF
+
 
 cat > setupIDMClient.yml << EOF
 - name: Playbook to configure IPA clients with username/password
