@@ -1,4 +1,6 @@
 #Copy SiteSetup to the /root
+IDMIP=192.168.1.112
+SATIP=192.168.1.113
 mkdir -p ~/SiteSetup/{Backups,Files,Images,ISOs,RPMs,Yaml}
 cd /root/SiteSetup/Yaml
 ansible-playbook -i .inventory uploadImage.yml
@@ -6,10 +8,10 @@ ansible-playbook -i .inventory create-vmFromImage.yml -e VMName=Template8.3 -e V
 -e ImageName=rhel-8.3-x86_64-kvm.qcow2 -e HostName=template8.3.myhost.com
 ansible-playbook -i .inventory create-template.yml -e VMName=Template8.3 -e VMTempate=Template8.3
 ansible-playbook -i .inventory create-vmFromTemplateWIP.yml -e VMName=idm -e VMMemory=4GiB -e VMCore=4  \
--e HostName=idm.myhost.com -e VMTempate=Template8.3 -e VMISO=rhel-8.3-x86_64-dvd.iso -e VMIP=192.168.1.112
+-e HostName=idm.myhost.com -e VMTempate=Template8.3 -e VMISO=rhel-8.3-x86_64-dvd.iso -e VMIP=${IDMIP}
 
-scp -o StrictHostKeyChecking=no   /root/SiteSetup/ISOs/rhel-8.3-x86_64-dvd.iso 192.168.1.112:~/
-ssh -o StrictHostKeyChecking=no 192.168.1.112 "mount /root/rhel-8.3-x86_64-dvd.iso /mnt/cdrom"
+#scp -o StrictHostKeyChecking=no   /root/SiteSetup/ISOs/rhel-8.3-x86_64-dvd.iso ${IDMIP}:~/
+ssh -o StrictHostKeyChecking=no ${IDMIP} "mount -o loop,ro /dev/sr1 /mnt/cdrom"
 ansible-galaxy collection install freeipa.ansible_freeipa
 
 cat > /root/SiteSetup/Yaml.inventory << EOF
@@ -52,8 +54,8 @@ EOF
 
 #cd ~/.ansible/collections/ansible_collections/freeipa/ansible_freeipa/roles/ipaserver/
 #ansible-playbook -i .inventory ~/.ansible/collections/ansible_collections/freeipa/ansible_freeipa/playbooks/install-server.yml
-ssh 192.168.1.112 "yumdownloader ansible-freeipa-0.1.12-6.el8"
-scp 192.168.1.112:~/ansible-freeipa-0.1.12-6.el8.noarch.rpm /root/SiteSetup/RPMs/
+ssh ${IDMIP} "yumdownloader ansible-freeipa-0.1.12-6.el8"
+scp ${IDMIP}:~/ansible-freeipa-0.1.12-6.el8.noarch.rpm /root/SiteSetup/RPMs/
 yum localinstall -y /root/SiteSetup/RPMs/ansible-freeipa-0.1.12-6.el8.noarch.rpm 
 
 cat >  /root/SiteSetup/Yaml/ansible.cfg << EOF
@@ -80,10 +82,14 @@ cd /root/SiteSetup/Yaml
 ansible-playbook -i .inventory  setupIDM.yml
 ####################################################################
 cd /root/SiteSetup/Yaml
-ansible-playbook -i .inventory create-vmFromImage.yml -e VMName=Template7.9 -e VMMemory=2GiB -e VMCore=1 -e ImageName=rhel-server-7.9-x86_64-kvm.qcow2 -e HostName=template7.9.myhost.com
+ansible-playbook -i .inventory create-vmFromImage.yml -e VMName=Template7.9 -e VMMemory=2GiB \
+-e VMCore=1 -e ImageName=rhel-server-7.9-x86_64-kvm.qcow2 -e HostName=template7.9.myhost.com
 ansible-playbook -i .inventory create-template.yml -e VMName=Template7.9 -e VMTempate=Template7.9
-ansible-playbook -i .inventory create-vmFromTemplateWIP-satellite.yml -e VMName=satellite -e VMMemory=16GiB -e VMCore=6  -e HostName=satellite.myhost.com -e VMTempate=Template7.9 -e VMISO=rhel-server-7.9-x86_64-dvd.iso -e VMIP=192.168.1.113 -e VMDNS=192.168.1.112
-ssh -o StrictHostKeyChecking=no 192.168.1.113
+ansible-playbook -i .inventory create-vmFromTemplateWIP-satellite.yml -e VMName=satellite -e VMMemory=16GiB -e VMCore=6 -e VMDiskSize=200GiB \
+-e HostName=satellite.myhost.com -e VMTempate=Template7.9 -e VMISO=rhel-server-7.9-x86_64-dvd.iso -e VMIP=${SATIP} -e VMDNS=${IDMIP}
+ssh -o StrictHostKeyChecking=no ${SATIP}
+ssh -o StrictHostKeyChecking=no ${SATIP} "mount -o loop,ro /dev/sr1 /mnt/cdrom"
+
 cat > setupIDMClient.yml << EOF
 - name: Playbook to configure IPA clients with username/password
   hosts: ipaclients
@@ -95,8 +101,9 @@ cat > setupIDMClient.yml << EOF
 EOF
 ansible-playbook -i .inventory  setupIDMClient.yml
 
-scp -o StrictHostKeyChecking=no   /root/SiteSetup/ISOs/satellite-6.8.0-rhel-7-x86_64-dvd.iso 192.168.1.113:~/
-ssh -o StrictHostKeyChecking=no 192.168.1.113 "cd /mnt/sat/ &&  ./install_packages"
+scp -o StrictHostKeyChecking=no   /root/SiteSetup/ISOs/satellite-6.8.0-rhel-7-x86_64-dvd.iso ${SATIP}:~/
+ssh -o StrictHostKeyChecking=no ${SATIP} "mount -o loop,ro /root/satellite-6.8.0-rhel-7-x86_64-dvd.iso /mnt/sat"
+ssh -o StrictHostKeyChecking=no ${SATIP} "cd /mnt/sat/ &&  ./install_packages"
 
 
 
