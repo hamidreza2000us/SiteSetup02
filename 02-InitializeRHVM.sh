@@ -95,7 +95,7 @@ ansible-playbook -i .inventory create-vmFromTemplateWIP-satellite.yml -e VMName=
 -e HostName=satellite.myhost.com -e VMTempate=Template7.9 -e VMISO=rhel-server-7.9-x86_64-dvd.iso -e VMIP=${SATIP} -e VMDNS=${IDMIP}
 
 sed -i "/${SATIP}/d" /root/.ssh/known_hosts
-ssh -o StrictHostKeyChecking=no ${SATIP} /bin/bash << EOF
+ssh -o StrictHostKeyChecking=no ${SATIP} /bin/bash << 'EOF'
 mount -o loop,ro /dev/sr1 /mnt/cdrom
 yum -y install lvm2
 parted -s -a optimal /dev/sdb unit MiB mklabel msdos mkpart primary xfs '0%' '100%' 
@@ -107,7 +107,8 @@ mkdir /mnt/temp;
 mount /dev/mapper/VG01-var /mnt/temp;
 cp -an /var/* /mnt/temp/;
 umount /mnt/temp;
-echo "/dev/mapper/VG01-var /var xfs defaults 0 0 " >> /etc/fstab
+export id=$(blkid -s UUID -o value /dev/mapper/VG01-var)
+echo "UUID=$id /var xfs defaults 0 0 " >> /etc/fstab
 mount -a;
 EOF
 
@@ -123,10 +124,13 @@ cat > setupIDMClient.yml << EOF
 EOF
 ansible-playbook -i .inventory  setupIDMClient.yml
 
-scp -o StrictHostKeyChecking=no   /root/SiteSetup/ISOs/satellite-6.8.0-rhel-7-x86_64-dvd.iso ${SATIP}:~/
-ssh -o StrictHostKeyChecking=no ${SATIP} "mount -o loop,ro /root/satellite-6.8.0-rhel-7-x86_64-dvd.iso /mnt/sat"
+ssh -o StrictHostKeyChecking=no ${IDMIP} 'echo "Iahoora@123" | kinit admin; ipa dnsrecord-add myhost.com. satellite --a-rec 192.168.1.113 '
+ssh -o StrictHostKeyChecking=no ${IDMIP} 'echo "Iahoora@123" | kinit admin; ipa dnsrecord-add 1.168.192.in-addr.arpa. 113 --ptr-rec satellite.myhost.com. '
+
+scp -o StrictHostKeyChecking=no   /root/SiteSetup/ISOs/satellite-6.8.0-rhel-7-x86_64-dvd.iso ${SATIP}:/var/
+ssh -o StrictHostKeyChecking=no ${SATIP} "mount -o loop,ro /var/satellite-6.8.0-rhel-7-x86_64-dvd.iso /mnt/sat"
 ssh -o StrictHostKeyChecking=no ${SATIP} "cd /mnt/sat/ &&  ./install_packages"
+ssh -o StrictHostKeyChecking=no ${SATIP} satellite-installer --scenario satellite
 
 
-
-ansible-galaxy install oasis_roles.satellite
+#ansible-galaxy install oasis_roles.satellite
