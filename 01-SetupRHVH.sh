@@ -5,54 +5,67 @@
 #copy the rhvm rpm package to /root directory
 #copy rhel-8.3-x86_64-kvm.qcow2 and rhel-server-7.9-x86_64-kvm.qcow2 to the /root directory
 #change password,hostname(rhvh,rhvm) and IPs in the config files
+RHVHIP=192.168.1.152
+RHVHGW=192.168.1.1
+RHVHDNS=192.168.1.107
+RHVHPass="ahoora"
 
-yum -y localinstall rhvm-appliance-4.4-20200915.0.el8ev.x86_64.rpm
+#RHVMIP=192.168.1.120
+
+mkdir /mnt/Mount
+mount -o ro UUID=79ad740b-6cd9-44d0-941a-39fb4939341a /mnt/Mount
+
+yum -y localinstall /mnt/Mount/Files/rhvm-appliance-4.4-20200915.0.el8ev.x86_64.rpm
 
 con=$( nmcli -g UUID,type con sh --active | grep ethernet | awk -F: '{print $1}' | head -n1)
 IP=$(nmcli con sh "$con" | grep IP4.ADDRESS | awk '{print $2}')
 GW=$(nmcli con sh "$con" | grep IP4.GATEWAY | awk '{print $2}')
 DNS=$(nmcli con sh "$con" | grep IP4.DNS | awk '{print $2}')
-DNS=192.168.1.107
+
+IP=${RHVHIP}
+DNS=${RHVHDNS}
+
 nmcli con mod "$con" ipv4.method manual ipv4.addresses $IP  ipv4.dns $DNS ipv4.gateway $GW connection.autoconnect yes
 nmcli con up $con
 
 ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa
-sshpass -p ahoora ssh-copy-id -o StrictHostKeyChecking=no rhvh01.myhost.com
+chmod 600 /root/.ssh/id_rsa.pub
+sshpass -p ${RHVHPass} ssh-copy-id -o StrictHostKeyChecking=no rhvh01.myhost.com
 
 cat > /etc/ansible/hc_wizard_inventory.yml << EOF
 hc_nodes:
   hosts:
     rhvh01.myhost.com:
       gluster_infra_volume_groups:
-        - vgname: gluster_vg_sdb
-          pvname: /dev/sdb
+        - vgname: gluster_vg_sda
+          pvname: /dev/sda
       gluster_infra_mount_devices:
         - path: /gluster_bricks/engine
           lvname: gluster_lv_engine
-          vgname: gluster_vg_sdb
+          vgname: gluster_vg_sda
         - path: /gluster_bricks/data
           lvname: gluster_lv_data
-          vgname: gluster_vg_sdb
+          vgname: gluster_vg_sda
         - path: /gluster_bricks/vmstore
           lvname: gluster_lv_vmstore
-          vgname: gluster_vg_sdb
+          vgname: gluster_vg_sda
       blacklist_mpath_devices:
-        - sdb
+        - sda
       gluster_infra_thick_lvs:
-        - vgname: gluster_vg_sdb
+        - vgname: gluster_vg_sda
           lvname: gluster_lv_engine
           size: 100G
       gluster_infra_thinpools:
-        - vgname: gluster_vg_sdb
-          thinpoolname: gluster_thinpool_gluster_vg_sdb
+        - vgname: gluster_vg_sda
+          thinpoolname: gluster_thinpool_gluster_vg_sda
           poolmetadatasize: 2G
       gluster_infra_lv_logicalvols:
-        - vgname: gluster_vg_sdb
-          thinpool: gluster_thinpool_gluster_vg_sdb
+        - vgname: gluster_vg_sda
+          thinpool: gluster_thinpool_gluster_vg_sda
           lvname: gluster_lv_data
           lvsize: 300G
-        - vgname: gluster_vg_sdb
-          thinpool: gluster_thinpool_gluster_vg_sdb
+        - vgname: gluster_vg_sda
+          thinpool: gluster_thinpool_gluster_vg_sda
           lvname: gluster_lv_vmstore
           lvsize: 300G
   vars:
@@ -167,7 +180,7 @@ EOF
 cd /usr/share/cockpit/ovirt-dashboard/ansible
 ansible-playbook -i /etc/ansible/hc_wizard_inventory.yml hc_wizard.yml
 #/var/lib/ovirt-hosted-engine-setup/answers/answers-20201207124856.conf
-
+cd ~
 hosted-engine --deploy --config-append=answers.conf
 
 sshpass -p ahoora ssh-copy-id -o StrictHostKeyChecking=no rhvm.myhost.com
