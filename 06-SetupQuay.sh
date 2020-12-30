@@ -160,3 +160,4 @@ EOF2
 #docker run -d --name mirroring-worker2 -v /mnt/quay/config:/conf/stack -v \
 #/root/ca.crt:/etc/pki/ca-trust/source/anchors/ca.crt quay.myhost.com/admin/quay:v3.3.0 repomirror
 
+#for i in $(podman ps -a | awk '{print $1}' | tail -n +2 ) ; do podman rm $i ; done

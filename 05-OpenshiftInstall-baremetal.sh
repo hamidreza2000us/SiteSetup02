@@ -175,6 +175,7 @@ ssh kni@${ProvisionerIP} sudo update-ca-trust
   --to-release-image=$LOCAL_REG/$LOCAL_REPO:${VERSION} \
   --to=$LOCAL_REG/$LOCAL_REPO
 
+#REMOVABLE_MEDIA_PATH
 #first create a user named ocp468 in quay, create a token, copy docker auth part and also grant permision to the tocken e as admin
 export OCP_RELEASE=4.6.8
 export LOCAL_REGISTRY='quay.myhost.com'
@@ -191,6 +192,31 @@ sudo oc adm release mirror -a ${LOCAL_SECRET_JSON}  \
   
   
   
+#######################temp#####################
+oc adm release mirror -a ${LOCAL_SECRET_JSON} --to-dir=${REMOVABLE_MEDIA_PATH}/mirror quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE}
+oc image mirror  -a ${LOCAL_SECRET_JSON} --from-dir=${REMOVABLE_MEDIA_PATH}/mirror "file://openshift/release:${OCP_RELEASE}*" ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} 
+
+export LOCAL_SECRET_JSON='/home/kni/pull-secret-update.json'
+export REMOVABLE_MEDIA_PATH=/repos
+export PRODUCT_REPO='openshift-release-dev'
+export RELEASE_NAME="ocp-release"
+export OCP_RELEASE=4.6.9
+export ARCHITECTURE=x86_64
+export LOCAL_REGISTRY='quay.myhost.com'
+export LOCAL_REPOSITORY='ocp468/testrepo'
+
+oc adm release mirror -a ${LOCAL_SECRET_JSON}  \
+     --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE} \
+     --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} \
+     --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}-${ARCHITECTURE} --dry-run
+	 
+oc adm release mirror -a ${LOCAL_SECRET_JSON} --to-dir=${REMOVABLE_MEDIA_PATH}/mirror quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE}
+
+
+oc image mirror  -a ${LOCAL_SECRET_JSON} --from-dir=${REMOVABLE_MEDIA_PATH}/mirror "file://openshift/release:${OCP_RELEASE}*" ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}
+
+ oc adm release extract -a ${LOCAL_SECRET_JSON} --command=openshift-install "${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}-${ARCHITECTURE}"
+##############################################
 #######################
 sudo nmcli connection add ifname provisioning type bridge con-name provisioning
 sudo nmcli con add type bridge-slave ifname eth0 master provisioning
