@@ -148,7 +148,7 @@ echo "cp quay-config.tar.gz /mnt/quay/config/"
 echo "cd /mnt/quay/config/"
 echo "tar xvf quay-config.tar.gz"
 echo "docker run --restart=always -p 443:8443 -p 80:8080 --sysctl net.core.somaxconn=4096 --privileged=true \
--v /mnt/quay/config:/conf/stack:Z -v /mnt/quay/storage:/datastorage:Z -d quay.myhost.com/admin/quay:v3.3.0"
+-v /var/quay/config:/conf/stack:Z -v /var/quay/storage:/datastorage:Z -d quay.myhost.com/admin/quay:v3.3.0"
 echo "###########################################"
 echo "login to you quay server with address below:"
 echo "https://$(hostname -f)"

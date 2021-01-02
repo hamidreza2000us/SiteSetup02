@@ -8,7 +8,7 @@ ansible-playbook -i ~/.inventory create-vmFromTemplateWIP.yml -e VMName=Provisio
 -e HostName=ProvisionerIP.myhost.com -e VMTempate=Template8.3 -e VMISO=rhel-8.3-x86_64-dvd.iso -e VMIP=${ProvisionerIP}
 
 sed -i "/${ProvisionerIP}/d" /root/.ssh/known_hosts
-ssh -o StrictHostKeyChecking=no ${IDMIP} 'echo "Iahoora@123" | kinit admin; ipa dnsrecord-add myhost.com. Provisioner --a-ip-address=192.168.1.134  --a-create-reverse '
+#ssh -o StrictHostKeyChecking=no ${IDMIP} 'echo "Iahoora@123" | kinit admin; ipa dnsrecord-add myhost.com. Provisioner --a-ip-address=192.168.1.134  --a-create-reverse '
 
 ssh -o StrictHostKeyChecking=no ${ProvisionerIP} 'useradd kni'
 ssh -o StrictHostKeyChecking=no ${ProvisionerIP} 'echo "ahoora" | passwd kni --stdin'
@@ -33,15 +33,17 @@ ssh kni@${ProvisionerIP} 'sudo systemctl enable libvirtd --now'
 ssh kni@${ProvisionerIP} sudo virsh pool-define-as --name default --type dir --target /var/lib/libvirt/images
 ssh kni@${ProvisionerIP} sudo virsh pool-start default
 ssh kni@${ProvisionerIP} sudo virsh pool-autostart default
-
 ##################
-sudo ip r a default via 192.168.1.177
+sudo ip r a default via 192.168.1.155
 sudo ip r d default via 192.168.1.1 dev eth0
-#copy pull-secret.txt
-[kni@provisioner ~]export VERSION=latest-4.6
+curl http://rhvh01.myhost.com/RHEL/Files/OpenShift/pull-secret.txt -o pull-secret.txt
+curl http://rhvh01.myhost.com/RHEL/Files/OpenShift/openshift-install-linux.tar.gz -o openshift-install-linux.tar.gz 
+curl http://rhvh01.myhost.com/RHEL/Files/OpenShift/openshift-client-linux.tar.gz -o openshift-client-linux.tar.gz
+tar xvf openshift-client-linux.tar.gz
+export VERSION=latest-4.6
 export RELEASE_IMAGE=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$VERSION/release.txt | grep 'Pull From: quay.io' | awk -F ' ' '{print $3}')
-scp /mnt/Mount/Files/OpenShift/openshift-install kni@${ProvisionerIP}:~/
-scp /mnt/Mount/Files/OpenShift/openshift-client-linux.tar.gz kni@${ProvisionerIP}:~/
+#scp /mnt/Mount/Files/OpenShift/openshift-install kni@${ProvisionerIP}:~/
+#scp /mnt/Mount/Files/OpenShift/openshift-client-linux.tar.gz kni@${ProvisionerIP}:~/
 export cmd=openshift-baremetal-install
 export pullsecret_file=~/pull-secret.txt
 export extract_dir=$(pwd)
@@ -168,30 +170,6 @@ sshpass -p ahoora  scp -o StrictHostKeyChecking=no   root@quay.myhost.com:/etc/d
 sshpass -p ahoora  scp -o StrictHostKeyChecking=no  /tmp/quayca.crt  root@${ProvisionerIP}:/etc/pki/ca-trust/source/anchors/quayca.crt
 ssh kni@${ProvisionerIP} sudo update-ca-trust
 
-#sudo scp kni@provisioner:/usr/local/bin/oc /usr/local/bin
-/usr/local/bin/oc adm release mirror \
-  -a pull-secret-update.txt
-  --from=$UPSTREAM_REPO \
-  --to-release-image=$LOCAL_REG/$LOCAL_REPO:${VERSION} \
-  --to=$LOCAL_REG/$LOCAL_REPO
-
-#REMOVABLE_MEDIA_PATH
-#first create a user named ocp468 in quay, create a token, copy docker auth part and also grant permision to the tocken e as admin
-export OCP_RELEASE=4.6.8
-export LOCAL_REGISTRY='quay.myhost.com'
-export LOCAL_REPOSITORY='ocp468/testrepo'
-export PRODUCT_REPO='openshift-release-dev'
-export LOCAL_SECRET_JSON='/home/kni/pull-secret-update.json'
-export RELEASE_NAME="ocp-release"
-export ARCHITECTURE=x86_64
-
-sudo oc adm release mirror -a ${LOCAL_SECRET_JSON}  \
-     --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE} \
-     --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} \
-     --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}-${ARCHITECTURE} #--dry-run
-  
-  
-  
 #######################temp#####################
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --to-dir=${REMOVABLE_MEDIA_PATH}/mirror quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE}-${ARCHITECTURE}
 oc image mirror  -a ${LOCAL_SECRET_JSON} --from-dir=${REMOVABLE_MEDIA_PATH}/mirror "file://openshift/release:${OCP_RELEASE}*" ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} 
@@ -215,15 +193,47 @@ oc adm release mirror -a ${LOCAL_SECRET_JSON} --to-dir=${REMOVABLE_MEDIA_PATH}/m
 
 oc image mirror  -a ${LOCAL_SECRET_JSON} --from-dir=${REMOVABLE_MEDIA_PATH}/mirror "file://openshift/release:${OCP_RELEASE}*" ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}
 
- oc adm release extract -a ${LOCAL_SECRET_JSON} --command=openshift-install "${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}-${ARCHITECTURE}"
+oc adm release extract -a ${LOCAL_SECRET_JSON} --command=openshift-install "${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}-${ARCHITECTURE}"
 ##############################################
+cat >> install-config.yaml << EOF
+additionalTrustBundle: | 
+  -----BEGIN CERTIFICATE-----
+  MIIDqTCCApGgAwIBAgIUSR3Qf5vKr3ZcGZgDFTQxqn7iPAYwDQYJKoZIhvcNAQEL
+  BQAwZDELMAkGA1UEBhMCR1IxEjAQBgNVBAgMCUZyYW5rZnVydDESMBAGA1UEBwwJ
+  RnJhbmtmdXJ0MRMwEQYDVQQKDApTYW5DbHVzdGVyMRgwFgYDVQQDDA9xdWF5Lm15
+  aG9zdC5jb20wHhcNMjAxMjI3MDQwNTQxWhcNMjMxMDE3MDQwNTQxWjBkMQswCQYD
+  VQQGEwJHUjESMBAGA1UECAwJRnJhbmtmdXJ0MRIwEAYDVQQHDAlGcmFua2Z1cnQx
+  EzARBgNVBAoMClNhbkNsdXN0ZXIxGDAWBgNVBAMMD3F1YXkubXlob3N0LmNvbTCC
+  ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOfirYJjYBNI2Si/XkvPlXgb
+  LzXc6AwAah0RLNqIx2k2jWnWa2JPFhvX9KCm1ytNDas+f382XQLRXhBz0MvIUKr7
+  u3G++z3ycD4YAYovCktbMgHzBIsnsBbhk5qP13VbaaLWHQn3+Bk7GcsTPKZxNcDV
+  aY0kxnGQVhixS1PXVAK2so+ckhdRaiMsLPIp3w7nPbvMHgrPGWstYGxyLnw0r9VI
+  9POlmNeTpICC0s/T0Ix3ythTxV4OS+yC5hsrT2cZZ5vFnsQ0bYOUi9JjMfffFNcL
+  zL8Vfu0fcYc+orAgHuUHHFYIPI0lnmziyT83mfTO29N1A8zVkt2w30Y19K44PYMC
+  AwEAAaNTMFEwHQYDVR0OBBYEFPM+43Vp1Q6TTMUAxNfIIBptgN3wMB8GA1UdIwQY
+  MBaAFPM+43Vp1Q6TTMUAxNfIIBptgN3wMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZI
+  hvcNAQELBQADggEBABFUgrWywuKg/yaSslTZ3NmmeMYGbbBLFbCtIYYyfwUDiJLf
+  VrgireCxZSzrMvtRJnMDTgCtCgKQYKpD5zLZatZKOZhriri6HgJHMnokQ9wE8rj/
+  xW9HqcVVHnouVY4P8RZiidBr6oquWZZeOgxE77+RNuLUCo1p/7FVP+ylau69C0W5
+  cWwd6Ma6MDj5NDq4EYThZ4VL91kIni1jIbbEE9aQdhGhFjg7F571COGeKbld3eXD
+  RDEiCpiyGqDn7eEofYFPWf7oi97RolWxd9lvyfZaDeOY7NRmvel7oMG+KYF1yuzW
+  zKk5ZHOX8irpc7c/kBhOpO6XV25nOb9usJAn0Vs=
+  -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - quay.myhost.com/ocp468/testrepo
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - quay.myhost.com/ocp468/testrepo
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+EOF
+
+
 #######################
 sudo nmcli connection add ifname provisioning type bridge con-name provisioning
 sudo nmcli con add type bridge-slave ifname eth0 master provisioning
 sudo nmcli connection modify provisioning ipv6.addresses fd00:1101::1/64 ipv6.method manual
 sudo nmcli con del System\ eth0
-
-
 
 ssh -o StrictHostKeyChecking=no kni@${ProvisionerIP} /bin/bash << 'EOF'
 export PUB_CONN="System eth0"
