@@ -1,17 +1,38 @@
 #podman installation via https://www.haproxy.com/documentation/hapee/2-1r1/installation/docker/
 #podman config via https://access.redhat.com/articles/5127211
 #podman source via https://catalog.redhat.com/software/containers/haproxytech/haproxy/594d19264b339a4816dc3dfa?container-tabs=overview&gti-tabs=get-the-source
-podman login registry.connect.redhat.com
-podman pull registry.connect.redhat.com/haproxytech/haproxy
+IDMIP=192.168.1.112
+GWIP=192.168.1.155
+WebIP=192.168.1.152
 
-#export LOADBALANCER_IP=192.168.1.220
-export LOADBALANCER_IP=192.168.13.129
-export BOOTSTRAP_IP=192.168.1.221
-export MASTER0_IP=192.168.1.222
-export MASTER1_IP=192.168.1.223
-export MASTER2_IP=192.168.1.224
-export COMPUTE0_IP=192.168.1.225
-export COMPUTE1_IP=192.168.1.226
+export LOADBALANCER_IP=192.168.1.230
+export MASTER0_IP=192.168.1.231
+export MASTER1_IP=192.168.1.232
+export MASTER2_IP=192.168.1.233
+export COMPUTE0_IP=192.168.1.234
+export COMPUTE1_IP=192.168.1.235
+export BOOTSTRAP_IP=192.168.1.236
+
+hostnamectl set-hostname lb.myhost.com
+nmcli con mod System\ eth0 con-name fixed ipv4.method static ipv4.gateway ${GWIP} ipv4.dns ${IDMIP} ipv4.addresses ${LOADBALANCER_IP}/24 
+nmcli con up fixed
+
+mount -o loop,ro /dev/cdrom /mnt/cdrom
+yum -y install podman bind-utils firewalld telnet wget
+systemctl enable firewalld
+systemctl start firewalld
+
+#sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+#setenforce 0
+#reboot is required
+
+#podman login registry.connect.redhat.com
+#podman pull registry.connect.redhat.com/haproxytech/haproxy
+wget http://${WebIP}/RHEL/Containers/haproxy.tar
+podman load -i haproxy.tar
+
+
+
 	
 mkdir /haproxy
 cd /haproxy
@@ -44,7 +65,7 @@ global
     log         127.0.0.1 local2
 
     #chroot      /var/lib/haproxy
-    pidfile     /var/run/haproxy.pid
+    pidfile     /var/lib/haproxy/haproxy.pid
     maxconn     4000
     #user        haproxy
     #group       haproxy
@@ -100,12 +121,12 @@ frontend machineconfig
 
 frontend tlsrouter
     mode tcp
-    bind :443
+    bind :8443
     default_backend secure
 
 frontend insecurerouter
     mode tcp
-    bind :80
+    bind :8080
     default_backend insecure
 
 #---------------------------------------------------------------------
@@ -142,16 +163,16 @@ backend insecure
     server worker1 ${COMPUTE1_IP}:80 check
 EOF
 
-semanage fcontext -a -t container_share_t  '/haproxy(/.*)?'
-restorecon -Rv /root/haproxy
+semanage fcontext -a -t container_file_t  '/haproxy(/.*)?'
+restorecon -Rv /haproxy
 chmod 655 /haproxy
 chmod 644 /haproxy/haproxy.cfg
 
 podman run \
     --name hapee \
     -d \
-    -p 80:80 \
-    -p 443:443 \
+    -p 80:8080 \
+    -p 443:8443 \
     -p 9000:9000 \
     -p 6443:6443 \
     -p 22623:22623 \
@@ -160,7 +181,6 @@ podman run \
     --privileged=true \
     registry.connect.redhat.com/haproxytech/haproxy
 	
-firewall-cmd --add-service=http,https --permanent
 firewall-cmd --add-service=http --add-service=https --permanent
 firewall-cmd --add-port=6443/tcp --add-port=22623/tcp  --add-port=9000/tcp --permanent
 firewall-cmd --reload

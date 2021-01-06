@@ -1,26 +1,28 @@
 IDMIP=192.168.1.112
 IDMPASS=Iahoora@123
 Domain=myhost.com.
+OpenshiftSub=openshift02
 PTRDomain=1.168.192.in-addr.arpa.
 
-export BOOTSTRAP_IP=192.168.1.227
-export BOOTSTRAP_DNS=bootstrap.openshift02
+
 export API_IP=192.168.1.230
-export API_DNS=api.openshift02
+export API_DNS=api.${OpenshiftSub}
 export APIINT_IP=192.168.1.230
-export APIINT_DNS=api-int.openshift02
+export APIINT_DNS=api-int.${OpenshiftSub}
 export APPS_IP=192.168.1.230
-export APPS_DNS=*.apps.openshift02
-export MASTER0_IP=192.168.1.222
-export MASTER0_DNS=master0.openshift02
-export MASTER1_IP=192.168.1.223
-export MASTER1_DNS=master1.openshift02
-export MASTER2_IP=192.168.1.224
-export MASTER2_DNS=master2.openshift02
-export COMPUTE0_IP=192.168.1.225
-export COMPUTE0_DNS=compute0.openshift02
-export COMPUTE1_IP=192.168.1.226
-export COMPUTE1_DNS=compute1.openshift02
+export APPS_DNS=*.apps.${OpenshiftSub}
+export MASTER0_IP=192.168.1.231
+export MASTER0_DNS=master0.${OpenshiftSub}
+export MASTER1_IP=192.168.1.232
+export MASTER1_DNS=master1.${OpenshiftSub}
+export MASTER2_IP=192.168.1.233
+export MASTER2_DNS=master2.${OpenshiftSub}
+export COMPUTE0_IP=192.168.1.234
+export COMPUTE0_DNS=compute0.${OpenshiftSub}
+export COMPUTE1_IP=192.168.1.235
+export COMPUTE1_DNS=compute1.${OpenshiftSub}
+export BOOTSTRAP_IP=192.168.1.236
+export BOOTSTRAP_DNS=bootstrap.${OpenshiftSub}
 
 
 ssh-keygen -t rsa -b 4096 -N '' -f /root/.ssh/id_rsa

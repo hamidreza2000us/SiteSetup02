@@ -1,3 +1,15 @@
+IDMIP=192.168.1.112
+GWIP=192.168.1.155
+QuayIP=192.168.1.221
+cluster=openshift02
+domain=myhost.com
+Web=http://rhvh01.myhost.com/RHEL/temp/OpenShift/
+
+timedatectl set-timezone Europe/London
+
+nmcli con mod System\ eth0 con-name fixed ipv4.method static ipv4.gateway ${GWIP} ipv4.dns ${IDMIP} 
+nmcli con up fixed
+
 curl http://rhvh01.myhost.com/RHEL/Files/OpenShift/openshift-client-linux.tar.gz -o openshift-client-linux.tar.gz
 tar xvf openshift-client-linux.tar.gz
 mv oc /usr/local/bin/
@@ -6,7 +18,10 @@ mkdir Openshift
 cd Openshift
 
 curl http://rhvh01.myhost.com/RHEL/Files/OpenShift/pull-secret.txt -o pull-secret.txt
+
+
 scp  -o StrictHostKeyChecking=no  ${QuayIP}:/root/rootCA.pem /etc/pki/ca-trust/source/anchors/quay.ca
+
 update-ca-trust
 export LOCAL_SECRET_JSON='pull-secret.txt'
 export REMOVABLE_MEDIA_PATH=/repos
@@ -20,6 +35,12 @@ oc adm release extract -a ${LOCAL_SECRET_JSON} --command=openshift-install "${LO
 mv openshift-install /usr/local/bin/
 
 
+ssh-keygen -t rsa -b 4096 -N '' -f /root/.ssh/id_rsa
+eval "$(ssh-agent -s)"
+ssh-add /root/.ssh/id_rsa
+
+cluster=openshift02
+domain=myhost.com
 PUBKEY=$(cat /root/.ssh/id_rsa.pub)
 mkdir /opt/OpenShift
 cat >  /opt/OpenShift/install-config.yaml << EOF
@@ -39,7 +60,7 @@ controlPlane:
   replicas: 3
 metadata:
   creationTimestamp: null
-  name: openshift01
+  name: ${cluster}
 networking:
   clusterNetwork:
   - cidr: 10.128.0.0/14
@@ -87,6 +108,33 @@ imageContentSources:
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
 EOF
 
+###############################################################################
+cat > /opt/OpenShift/config.sh << EOF
+#S1=ignfile
+Web=${Web}
+DISK=/dev/nvme0n1
+EOF
+cat >> /opt/OpenShift/config.sh << 'EOF'
+sudo coreos-installer install --insecure-ignition --ignition-url=${Web}/$1 ${DISK}
+EOF
+###############################################################################
+
 openshift-install create manifests --dir=/opt/OpenShift
 #modify some files here
 openshift-install create ignition-configs --dir=/opt/OpenShift
+scp -r -o StrictHostKeyChecking=no /opt/OpenShift/ rhvh01.myhost.com:/mnt/Mount/temp/
+ssh rhvh01.myhost.com chmod -R 555 /mnt/Mount/temp/
+###############################################################################
+#register record for each dhcp client
+#type the following line in each console
+#there is a problem with mtu on workstation. you need to change mtu for OC nodes or at the destination like quay, rhvh and lb
+sudo ifconfig ens160 mtu 1450
+curl rhvh01.myhost.com/RHEL/temp/OpenShift/config.sh -o config.sh
+
+#based on each config change the input variables
+bash config.sh bootstrap.ign
+reboot
+
+openshift-install wait-for bootstrap-complete --dir=/opt/OpenShift --log-level=debug
+openshift-install wait-for install-complete --dir=/opt/OpenShift --log-level=debug
+
