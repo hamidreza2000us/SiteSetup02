@@ -138,3 +138,12 @@ reboot
 openshift-install wait-for bootstrap-complete --dir=/opt/OpenShift --log-level=debug
 openshift-install wait-for install-complete --dir=/opt/OpenShift --log-level=debug
 
+export KUBECONFIG=/opt/OpenShift/auth/kubeconfig
+oc whoami
+oc get nodes
+oc get csr
+oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs oc adm certificate approve
+#watch -n5 oc get clusteroperators
+oc get clusteroperator image-registry
+oc get pods --all-namespaces
+  
