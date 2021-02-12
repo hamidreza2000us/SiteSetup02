@@ -180,6 +180,8 @@ ssh -o StrictHostKeyChecking=no ${IDMIP} 'echo "Iahoora@123" | kinit admin; ipa 
 ############################################################################################
 #podman run --volume /var/lib/etcd:/var/lib/etcd:Z quay.io/openshift-scale/etcd-perf
 
+export KUBECONFIG=/opt/OpenShift/auth/kubeconfig
+
 : '
 ? SSH Public Key /root/.ssh/id_rsa.pub
 ? Platform ovirt

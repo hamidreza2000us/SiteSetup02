@@ -26,43 +26,11 @@ OS=CentOS
 major=7
 minor=8.2003
 ################################################################installation#########################################################################
-
-#########################Global config##################
-hammer settings set --name ansible_ssh_private_key_file --value /var/lib/foreman-proxy/ssh/id_rsa_foreman_proxy 
-hammer settings set --name  default_pxe_item_global --value discovery
-hammer template build-pxe-default
-#########################ansible config##################
-sed -i -e 's/^#callback_whitelist = timer, mail/callback_whitelist = foreman/g' /etc/ansible/ansible.cfg
-echo "[callback_foreman]" >> /etc/ansible/ansible.cfg
-echo "url = https://$domain" >> /etc/ansible/ansible.cfg
-echo "ssl_cert = /etc/foreman-proxy/ssl_cert.pem" >> /etc/ansible/ansible.cfg
-echo "ssl_key = /etc/foreman-proxy/ssl_key.pem" >> /etc/ansible/ansible.cfg
-echo "verify_certs = /etc/foreman-proxy/ssl_ca.pem" >> /etc/ansible/ansible.cfg
-
-#foreman-maintain packages install -y rhel-system-roles
-#hammer ansible roles import --role-names rhel-system-roles.timesync --proxy-id 1
-#hammer ansible variables create --variable timesync_ntp_servers --variable-type array --override true \
-#--default-value  "[{\"hostname\":\"$idmhost\"}]" --ansible-role  rhel-system-roles.timesync --hidden-value false
-
-#########################ldap config##################
-hammer auth-source ldap create --name $idmhost --host $idmhost --server-type free_ipa \
---account $idmuser --account-password "$idmpass" --base-dn $idmdn  --onthefly-register true \
---attr-login uid  --attr-firstname givenName --attr-lastname sn --attr-mail mail
-hammer realm create --name $idmrealm --realm-type FreeIPA --realm-proxy-id 1 --organization-id 1
-#########################lifecycle config##################
 hammer lifecycle-environment create  --description "dev"  --name dev  --label dev --organization-id 1 --prior Library
 hammer lifecycle-environment create  --description "qa"  --name qa  --label qa --organization-id 1 --prior dev
 hammer lifecycle-environment create  --description "prod"  --name prod  --label prod --organization-id 1 --prior qa
 #foreman-maintain service restart
 ################################################################basic media#########################################################################
-#########################network config##################
-hammer domain update --name $domainname --organization-id 1
-#hammer subnet create --name $subnetname --network $network --mask $netmask --gateway $gw  \
-#--dns-primary $dns --ipam DHCP --boot-mode DHCP --from $startip --to $endip  \
-#--dhcp $domain  --tftp $domain --discovery-id 1 --httpboot-id 1 --domains $domainname --organization-id 1
-
-hammer subnet create --name $subnetname --network $network --mask $netmask --gateway $gw  \
---dns-primary $dns --tftp $domain --discovery-id 1 --httpboot-id 1 --domains $domainname --organization-id 1
 #########################medium config##################OK
 
 mount -o ro /dev/cdrom /mnt/cdrom
