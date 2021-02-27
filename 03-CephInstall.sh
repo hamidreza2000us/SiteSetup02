@@ -1,5 +1,6 @@
+#Copy and paste the variables from 02 file
 cd /mnt/Mount/Yaml2/
-for HostName in ceph04 ceph05 ceph06
+for HostName in  ceph01 ceph02 ceph03
 do
 ansible-playbook -i ~/.inventory 09-CephVM.yml -e VMName=${HostName}
 MAC=$(virsh -r dumpxml ${HostName} | grep "mac address" | awk -F\' '{ print $2}')
@@ -125,7 +126,7 @@ ceph osd pool stats
 
 rados -p pool01 -N NS1 put srv /etc/services
 rados -p pool01 -N NS1 get srv myfile
-rados bench -p pool01 10 write --no-cleanup
+rados bench -p pool01 10 write #--no-cleanup
 rados bench -p pool01 10 seq
 
 
@@ -223,3 +224,166 @@ for bucket in response['Buckets']:
                 created = bucket['CreationDate']
 ))
 EOF
+
+
+############################################################################
+#setsebool -P virt_qemu_ga_read_nonsecurity_files 1
+sudo ip r a default via 192.168.1.155
+sudo ip r d default via 192.168.1.1
+sudo ip l set enp1s0 mtu 1400
+curl ipinfo.io/country
+
+yum install cockpit cockpit-ceph-installer -y
+systemctl enable cockpit
+systemctl start cockpit
+#systemctl status cockpit
+su - ansible
+mkdir -p /home/ansible/.ssh/
+exit
+ssh-keygen -t rsa -N '' -f /home/ansible/.ssh/id_rsa
+chown ansible:ansible /home/ansible/.ssh/id_rsa
+#####################################
+echo "ahoora" | kinit ansible
+for host in myhost02 ceph01 ceph02 ceph03
+do 
+ssh-copy-id -i /home/ansible/.ssh/id_rsa ansible@${host}
+ssh -o  StrictHostKeyChecking=no ansible@${host} /bin/bash << EOF
+sudo yum -y install sshpass
+sudo mkdir -p /etc/docker/certs.d/quay.myhost.com/
+sudo sshpass -p ahoora  scp -o  StrictHostKeyChecking=no quay.myhost.com:/etc/docker/certs.d/quay.myhost.com/ca.crt /etc/docker/certs.d/quay.myhost.com/
+sudo update-ca-trust
+EOF
+done
+#####################################
+podman login quay.myhost.com -u hamid -p Iahoora@123
+podman pull quay.myhost.com/rhceph/ansible-runner-rhel8
+podman tag quay.myhost.com/rhceph/ansible-runner-rhel8 registry.redhat.io/rhceph/ansible-runner-rhel8
+su - ansible
+sudo ansible-runner-service.sh -s
+sudo curl http://rhvh01.myhost.com/RHEL/ISOs/rhceph-4.2-rhel-8-x86_64.iso -o /usr/share/ansible-runner-service/iso/rhceph-4.2-rhel-8-x86_64.iso
+sudo semanage fcontext -a -t container_file_t /usr/share/ansible-runner-service/iso/rhceph-4.2-rhel-8-x86_64.iso
+sudo restorecon -Rv /usr/share/ansible-runner-service/iso/rhceph-4.2-rhel-8-x86_64.iso
+exit
+#sshpass -p Iahoora@123 ssh-copy-id -i /home/ansible/.ssh/id_rsa ceph07.myhost.com
+####################################################################################################
+cat > /usr/share/ceph-ansible/group_vars/all.yml << EOF
+---
+alertmanager_container_image: quay.myhost.com/rhceph/ose-prometheus-alertmanager:4.1
+ceph_conf_overrides:
+  global:
+    osd_crush_chooseleaf_type: 0
+    osd_pool_default_size: 1
+ceph_docker_image: rhceph/rhceph-4-rhel8
+ceph_docker_registry: quay.myhost.com
+ceph_docker_registry_auth: true
+ceph_docker_registry_password: 'Iahoora@123'
+ceph_docker_registry_username: 'hamid'
+ceph_origin: repository
+ceph_repository: rhcs
+ceph_repository_type: iso
+ceph_rhcs_iso_path: /usr/share/ansible-runner-service/iso/rhceph-4.2-rhel-8-x86_64.iso
+ceph_rhcs_version: 4
+cluster_network: 192.168.1.0/24
+containerized_deployment: true
+dashboard_admin_password: Iahoora@123
+dashboard_enabled: true
+docker_pull_timeout: 600s
+grafana_admin_password: Iahoora@123
+grafana_container_image: quay.myhost.com/rhceph/rhceph-3-dashboard-rhel7:3
+ip_version: ipv4
+monitor_address_block: 192.168.1.0/24
+node_exporter_container_image: quay.myhost.com/rhceph/ose-prometheus-node-exporter:v4.1
+prometheus_container_image: quay.myhost.com/rhceph/ose-prometheus:4.1
+public_network: 192.168.1.0/24
+radosgw_address_block: 192.168.1.0/24
+EOF
+#######################
+cat > /usr/share/ceph-ansible/group_vars/mons.yml << EOF
+---
+secure_cluster: false
+secure_cluster_flags:
+- nopgchange
+- nodelete
+- nosizechange
+EOF
+####################
+cat >  /usr/share/ceph-ansible/group_vars/osds.yml << EOF
+---
+osd_auto_discovery: false
+osd_objectstore: bluestore
+osd_scenario: lvm
+devices:
+  - /dev/sdb
+  - /dev/sdc
+  - /dev/sdd
+EOF
+#####################
+cat > /usr/share/ceph-ansible/group_vars/rgws.yml << EOF
+---
+radosgw_frontend_port: '8080'
+radosgw_frontend_type: beast
+EOF
+######################
+cat > /usr/share/ceph-ansible/group_vars/dashboards.yml << EOF
+---
+grafana_server_group_name: grafana-server
+EOF
+#######################
+cat > /usr/share/ceph-ansible/group_vars/mgrs.yml << EOF
+---
+ceph_mgr_modules:
+- prometheus
+- status
+- dashboard
+- pg_autoscaler
+EOF
+#####################
+mkdir /usr/share/ceph-ansible/host_vars
+#cat > /usr/share/ceph-ansible/host_vars/ceph07 << EOF
+#---
+#nvme_device: /dev/nvme0n1
+#hdd_devices:
+#devices:
+#  - /dev/sdb
+#  - /dev/sdc
+#  - /dev/sdd
+#EOF
+
+#################
+cat > /usr/share/ceph-ansible/hosts << EOF
+all:
+  children:
+    grafana-server:
+      hosts:
+        myhost02: null
+    mgrs:
+      hosts:
+        ceph01: null
+        ceph02: null
+        ceph03: null
+    mons:
+      hosts:
+        ceph01: null
+        ceph02: null
+        ceph03: null
+    osds:
+      hosts:
+        ceph01: null
+        ceph02: null
+        ceph03: null
+    rgws:
+      hosts:
+        ceph01: null
+        ceph02: null
+        ceph03: null
+EOF
+sudo chown -R ansible:ansible /usr/share/ceph-ansible/
+su - ansible
+cd /usr/share/ceph-ansible
+ansible-playbook -i hosts site-container.yml
+
+
+
+ 
+ 
+
