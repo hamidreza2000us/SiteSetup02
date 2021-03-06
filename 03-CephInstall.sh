@@ -1,8 +1,8 @@
 #Copy and paste the variables from 02 file
 cd /mnt/Mount/Yaml2/
-for HostName in  ceph01 ceph02 ceph03
+for HostName in  ceph04 ceph05 ceph06
 do
-ansible-playbook -i ~/.inventory 09-CephVM.yml -e VMName=${HostName}
+ansible-playbook -i ~/.inventory 09-CephVM.yml -e VMName=${HostName} -e VMStorageDomain=ssd
 MAC=$(virsh -r dumpxml ${HostName} | grep "mac address" | awk -F\' '{ print $2}')
 ssh -o StrictHostKeyChecking=no ${SATIP} /bin/bash << EOF
 hammer host create --name ${HostName} --hostgroup hostgroup01 --content-source ${SatHost}.${Domain}   \
@@ -14,6 +14,30 @@ EOF
 ansible-playbook -i ~/.inventory 00-RestartVM.yml -e VMName=${HostName}
 done
 
+ansible-playbook -i ~/.inventory 05-FromTemplate-WithIP-RH8.yml -e VMName=ceph-m -e VMMemory=4GiB -e VMCore=4  \
+-e HostName=ceph-m.myhost.com -e VMTempate=Template8.3 -e VMISO=rhel-8.3-x86_64-dvd.iso -e VMIP=172.20.29.134
+
+echo Iahoora@123 | kinit admin; ipa dnsrecord-add myhost.com. ceph-m --a-ip-address=172.20.29.134  --a-create-reverse 
+nmcli con mod System\ eth0 con-name fixed ipv4.dns 172.20.29.130 ipv4.gateway 172.20.29.158
+nmcli con up fixed
+
+mount /dev/cdrom /mnt/cdrom/
+yum localinstall -y http://satellite.myhost.com/pub/katello-ca-consumer-latest.noarch.rpm
+subscription-manager register --org=MCI  --activationkey=mykey01
+
+yum -y install ipa-client
+ipa-client-install -U -p admin -w Iahoora@123 --domain=myhost.com  --enable-dns-updates
+
+echo "Iahoora@123" | kinit admin
+echo "ahoora" | ipa user-add ansible --first ansible --last user  --password --password-expiration=$(date -d "+1 year" +%Y%m%d%H%M%S)Z
+ipa sudorule-add-user AdminRule --users=ansible
+echo "autocmd FileType yaml setlocal ai ts=2 sw=2 et" > ~/.vimrc
+
+ 
+yum -y install ceph-ansible 
+
+
+##############################################################################################
 
 firewall-cmd --add-service=ceph-mon --add-service=ceph --permanent
 firewall-cmd --add-port=7000/tcp --add-port=8003/tcp --add-port=9283/tcp --add-port=7480/tcp --add-port=80/tcp --add-port=2003/tcp --add-port=2004/tcp --add-port=3000/tcp --add-port=7002/tcp --permanent
@@ -129,9 +153,7 @@ rados -p pool01 -N NS1 get srv myfile
 rados bench -p pool01 10 write #--no-cleanup
 rados bench -p pool01 10 seq
 
-
 ceph auth get-or-create client.hamid01 mon 'allow r' osd 'allow rw'  -o /etc/ceph/ceph.client.hamid01.keyring
-
 
 radosgw-admin user create --uid=swift01 --display-name=swift01
 radosgw-admin subuser create --uid=swift01 --subuser=swift01:user01 --access=full --secret=67890
@@ -142,12 +164,7 @@ swift -V 1.0 -A http://ceph01.myhost.com:8080/auth/v1 -U swift01:user01 -K 67890
 swift -V 1.0 -A http://ceph01.myhost.com:8080/auth/v1 -U swift01:user01 -K 67890 upload swfit-container /etc/services
 swift -V 1.0 -A http://ceph01.myhost.com:8080/auth/v1 -U swift01:user01 -K 67890 download swfit-container etc/services -o /tmp/test
 
-
-swift -V 1.0 -A http://ceph04.myhost.com/auth/v1 -U swift01:user01 -K 67890 stat 
-swift -V 1.0 -A http://ceph04.myhost.com/auth/v1 -U swift01:user01 -K 67890 post swift-container
-swift -V 1.0 -A http://ceph04.myhost.com/auth/v1 -U swift01:user01 -K 67890 list
-swift -V 1.0 -A http://ceph04.myhost.com/auth/v1 -U swift01:user01 -K 67890 upload swfit-container /etc/services
- 
+swift -V 1.0 -A http://ceph01.myhost.com:8080/auth/v1 -U swift01:user01 -K 67890 post swfit-container --read-acl ".r:*,.rlistings"
 
 
 ##################################################################
@@ -180,6 +197,13 @@ sudo systemctl restart ceph-radosgw@*
 
 radosgw-admin sync status
 
+#########################################################
+swift -V 1.0 -A http://ceph01.myhost.com:8080/auth/v1 -U swift01:user01 -K 67890 stat
+podman pull  vardhanv/cosbench_ng:0.9
+podman exec  ceph-osd-0 radosgw-admin user create --uid="s3user01" --display-name="s3user01" --caps="users=read,write; usage=read,write; buckets=read,write; zone=read,write" --access_key="12345" --secret="67890"
+wget https://raw.githubusercontent.com/vardhanv/cosbench_ng/master/master-start.sh
+bash master-start.sh --configure
+bash master-start.sh -n -b testbucket  -c PUT -m 10 -r 10
 
 
 ##########################################################
@@ -237,6 +261,8 @@ yum install cockpit cockpit-ceph-installer -y
 systemctl enable cockpit
 systemctl start cockpit
 #systemctl status cockpit
+mkdir /home/ansible
+chown ansible:ansible /home/ansible
 su - ansible
 mkdir -p /home/ansible/.ssh/
 exit
@@ -244,7 +270,7 @@ ssh-keygen -t rsa -N '' -f /home/ansible/.ssh/id_rsa
 chown ansible:ansible /home/ansible/.ssh/id_rsa
 #####################################
 echo "ahoora" | kinit ansible
-for host in myhost02 ceph01 ceph02 ceph03
+for host in ceph-m ceph01 ceph02 ceph03
 do 
 ssh-copy-id -i /home/ansible/.ssh/id_rsa ansible@${host}
 ssh -o  StrictHostKeyChecking=no ansible@${host} /bin/bash << EOF
@@ -255,7 +281,7 @@ sudo update-ca-trust
 EOF
 done
 #####################################
-podman login quay.myhost.com -u hamid -p Iahoora@123
+podman login quay.myhost.com -u admin -p Iahoora@123
 podman pull quay.myhost.com/rhceph/ansible-runner-rhel8
 podman tag quay.myhost.com/rhceph/ansible-runner-rhel8 registry.redhat.io/rhceph/ansible-runner-rhel8
 su - ansible
@@ -277,13 +303,13 @@ ceph_docker_image: rhceph/rhceph-4-rhel8
 ceph_docker_registry: quay.myhost.com
 ceph_docker_registry_auth: true
 ceph_docker_registry_password: 'Iahoora@123'
-ceph_docker_registry_username: 'hamid'
+ceph_docker_registry_username: 'admin'
 ceph_origin: repository
 ceph_repository: rhcs
 ceph_repository_type: iso
 ceph_rhcs_iso_path: /usr/share/ansible-runner-service/iso/rhceph-4.2-rhel-8-x86_64.iso
 ceph_rhcs_version: 4
-cluster_network: 192.168.1.0/24
+cluster_network: 172.20.29.128/27
 containerized_deployment: true
 dashboard_admin_password: Iahoora@123
 dashboard_enabled: true
@@ -291,11 +317,11 @@ docker_pull_timeout: 600s
 grafana_admin_password: Iahoora@123
 grafana_container_image: quay.myhost.com/rhceph/rhceph-3-dashboard-rhel7:3
 ip_version: ipv4
-monitor_address_block: 192.168.1.0/24
+monitor_address_block: 172.20.29.128/27
 node_exporter_container_image: quay.myhost.com/rhceph/ose-prometheus-node-exporter:v4.1
 prometheus_container_image: quay.myhost.com/rhceph/ose-prometheus:4.1
-public_network: 192.168.1.0/24
-radosgw_address_block: 192.168.1.0/24
+public_network: 172.20.29.128/27
+radosgw_address_block: 172.20.29.128/27
 EOF
 #######################
 cat > /usr/share/ceph-ansible/group_vars/mons.yml << EOF
@@ -355,7 +381,7 @@ all:
   children:
     grafana-server:
       hosts:
-        myhost02: null
+        ceph-m: null
     mgrs:
       hosts:
         ceph01: null
@@ -383,7 +409,104 @@ cd /usr/share/ceph-ansible
 ansible-playbook -i hosts site-container.yml
 
 
+#ntp should be set in idm and all other servers
+#timezone for ceph-m should be set
 
- 
- 
+#########################################################################################
+#commands below are to purge the cluster and the disks for a new installation
+cp infrastructure-playbooks/purge-container-cluster.yml .
+ansible-playbook -i hosts purge-container-cluster.yml
+####error: ansible use can't use the sudo lvs!
+echo "ahoora" | kinit ansible
+for host in ceph01 ceph02 ceph03
+do 
+ssh -o  StrictHostKeyChecking=no ansible@${host} /bin/bash << EOF
+while read line 
+do 
+lvname=$(echo -n ${line} | awk '{print $1}') 
+vgname=$(echo $line | awk '{print $2}') 
+sudo lvremove -f $vgname/$lvname 
+done < <(sudo lvs | grep osd | grep ceph )
 
+while read line 
+do 
+vgname=$(echo $line | awk '{print $1}') 
+sudo vgremove -f $vgname
+done < <(sudo vgs | grep ^ceph )
+
+for i in b c d e f g h i j k l m 
+do 
+sudo pvremove /dev/sd$i
+sudo dd if=/dev/zero of=/dev/sd$i bs=1M count=100   
+done
+
+EOF
+done
+#########################################################################################
+
+#########################################################################################
+cd /usr/share/ceph-ansible/
+cp infrastructure-playbooks/lv-create.yml .
+cp infrastructure-playbooks/lv-teardown.yml .
+cp infrastructure-playbooks/vars/lv_vars.yaml.sample ./lv_vars.yaml
+cat >> ./lv_vars.yaml << EOF
+nvme_device: /dev/sdl
+hdd_devices:
+  - /dev/sdb
+  - /dev/sdc
+  - /dev/sdd
+  - /dev/sde
+  - /dev/sdf
+EOF
+ansible-playbook -i hosts lv-teardown.yml
+ansible-playbook -i hosts lv-create.yml
+cat >  /usr/share/ceph-ansible/group_vars/osds.yml << EOF
+---
+osd_auto_discovery: false
+osd_objectstore: bluestore
+osd_scenario: lvm
+lvm_volumes:
+EOF
+tail -n +3 lv-create.log >> group_vars/osds.yml
+
+cp infrastructure-playbooks/vars/lv_vars.yaml.sample ./lv_vars.yaml
+cat >> ./lv_vars.yaml << EOF
+ nvme_device: /dev/sdm
+hdd_devices:
+  - /dev/sdg
+  - /dev/sdh
+  - /dev/sdi
+  - /dev/sdj
+  - /dev/sdk
+EOF
+ansible-playbook -i hosts lv-teardown.yml
+ansible-playbook -i hosts lv-create.yml
+tail -n +3 lv-create.log >> group_vars/osds.yml
+#########################################################################################
+
+
+
+
+#########################################################################################
+nmcli con down "System ens1f0"
+nmcli con del ens1f1
+nmcli con del "System ens1f0"
+nmcli con add con-name team01 type team ifname team01 team.runner lacp ipv4.addresses 172.20.29.145/27 ipv4.dns 172.20.29.130 ipv4.gateway 172.20.29.158
+nmcli con add con-name team-ens1f1 ifname ens1f1 type team-slave master team01
+nmcli con add con-name team-ens1f0 ifname ens1f0 type team-slave master team01
+nmcli con up team01 
+#########################################################################################
+
+
+podman exec -it d6a54031c64f ceph osd pool set .rgw.root size 3
+podman exec -it d6a54031c64f ceph osd pool set default.rgw.control size 3
+podman exec -it d6a54031c64f ceph osd pool set default.rgw.meta size 3
+podman exec -it d6a54031c64f ceph osd pool set default.rgw.log size 3
+podman exec -it d6a54031c64f ceph osd pool create pool01 32 32 replicated
+podman exec -it d6a54031c64f ceph osd pool set pool01 size 3
+podman exec -it d6a54031c64f ceph osd pool application enable  pool01 rgw
+
+podman exec -it d6a54031c64f rados bench -p pool01 30 write --no-cleanup
+podman exec -it d6a54031c64f rados bench -p pool01 10 rand -t 1024
+podman exec -it d6a54031c64f rados bench -p pool01 20 seq -t 1024
+podman exec -it d6a54031c64f rados cleanup -p pool01 --run-name benchmark_last_metadata 

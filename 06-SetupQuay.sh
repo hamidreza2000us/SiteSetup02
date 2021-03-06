@@ -8,16 +8,16 @@
 
 #export IDMIP=192.168.1.112
 #export IDMPASS="Iahoora@123"
-export QuayIP=192.168.1.221
+export QuayIP=172.20.29.133
 #export VPNIP=192.168.1.155
-ansible-playbook -i ~/.inventory create-vmFromTemplateWIPWdisk8.yml -e VMName=quay -e VMMemory=8GiB -e VMCore=8  \
+ansible-playbook -i ~/.inventory 06-FromTemplate-WithIPDisk-RH8.yml -e VMName=quay -e VMMemory=8GiB -e VMCore=8  \
 -e HostName=quay.myhost.com -e VMTempate=Template8.3 -e VMDiskSize=100GiB  -e VMISO=rhel-8.3-x86_64-dvd.iso -e VMIP=${QuayIP}
 sed -i "/${QuayIP}/d" /root/.ssh/known_hosts
 ssh -o StrictHostKeyChecking=no ${QuayIP} /bin/bash << 'EOF2'
-export IDMIP=192.168.1.112
+export IDMIP=172.20.29.130
 export IDMPASS="Iahoora@123"
-export QuayIP=192.168.1.221
-export VPNIP=192.168.1.155
+export QuayIP=172.20.29.133
+export VPNIP=172.20.29.158
 mount -o loop,ro /dev/sr0 /mnt/cdrom
 yum -y install lvm2
 parted -s -a optimal /dev/sdb unit MiB mklabel msdos mkpart primary xfs '0%' '100%' 
@@ -144,8 +144,8 @@ echo -n " "
 echo -n " "
 echo "###########################################"
 echo "Then enter the following commands manually"
-echo "cp quay-config.tar.gz /mnt/quay/config/"
-echo "cd /mnt/quay/config/"
+echo "cp quay-config.tar.gz /var/quay/config/"
+echo "cd /var/quay/config/"
 echo "tar xvf quay-config.tar.gz"
 echo "docker run --restart=always -p 443:8443 -p 80:8080 --sysctl net.core.somaxconn=4096 --privileged=true \
 -v /var/quay/config:/conf/stack:Z -v /var/quay/storage:/datastorage:Z -d quay.myhost.com/admin/quay:v3.3.0"
