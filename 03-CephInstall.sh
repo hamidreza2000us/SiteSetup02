@@ -299,6 +299,7 @@ ceph_conf_overrides:
   global:
     osd_crush_chooseleaf_type: 0
     osd_pool_default_size: 1
+	mon_allow_pool_delete: true
 ceph_docker_image: rhceph/rhceph-4-rhel8
 ceph_docker_registry: quay.myhost.com
 ceph_docker_registry_auth: true
