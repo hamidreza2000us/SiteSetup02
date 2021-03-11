@@ -5,6 +5,10 @@ curl http://rhvh01.myhost.com/RHEL/Containers/artifactory-pro_latest.tar.gz -o a
 podman load -i artifactory-pro_latest.tar.gz
 setenforce 0
 
+rm -rf /var/opt/jfrog/artifactory
+cd /root/
+rm -rf tomcat/ pgdata/
+
 groupadd -g 1030 artifactory
 useradd -u 1030 -g 1030 artifactory
 mkdir -p /var/opt/jfrog/artifactory
@@ -13,6 +17,7 @@ restorecon -Rv /var/opt/jfrog/artifactory
 chown artifactory:artifactory /var/opt/jfrog/artifactory
 chmod 777 /var/opt/jfrog/artifactory
 
+mkdir pgdata
 podman run --privileged=true  --name postgres -d  -p 5432:5432 -v /root/pgdata:/var/lib/postgresql/data:rw \
 -e POSTGRES_PASSWORD=password -e POSTGRES_USER=artifactory -e POSTGRES_DB=artifactory docker.io/library/postgres
 
@@ -38,6 +43,10 @@ podman restart ${dockerID}
 #download the configuration file
 
 
+ldapurl=ldap://idm.myhost.com/dc=myhost,dc=com
+userdn= uid={0},cn=users,cn=accounts
+searchfilter=uid={0}
+searchbase=cn=users,cn=accounts,dc=myhost,dc=com
 
 
 
