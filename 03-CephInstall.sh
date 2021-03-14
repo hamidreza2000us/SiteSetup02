@@ -216,9 +216,11 @@ radosgw-admin user create --uid="s3user01" --display-name="s3user01" \
 --access_key="12345" --secret="67890"
 
 s3cmd --configure --access_key=12345 --secret_key=67890 --no-ssl  \
---host=ceph01.myhost.com:8080 --host-bucket="%(bucket)s.ceph01.myhost.com:8080" --no-encrypt
+--host=ceph01.myhost.com:8080 --host-bucket="ceph01.myhost.com:8080/%(bucket)" --no-encrypt
 
-
+s3cmd mb s3://mybucket01
+s3cmd put --acl-public .bash_history s3://hamids3
+s3cmd get s3://hamids3/install.post.log
 
 yum -y install perl-Digest-HMAC.noarch perl-libs perl-interpreter
  ./s3curl.pl --id='12345' --key='67890'  --createBucket  -- http://ceph01.myhost.com:8080
@@ -511,3 +513,12 @@ podman exec -it d6a54031c64f rados bench -p pool01 30 write --no-cleanup
 podman exec -it d6a54031c64f rados bench -p pool01 10 rand -t 1024
 podman exec -it d6a54031c64f rados bench -p pool01 20 seq -t 1024
 podman exec -it d6a54031c64f rados cleanup -p pool01 --run-name benchmark_last_metadata 
+
+
+
+ceph config dump
+ceph osd pool autoscale-status
+ceph mgr module enable diskprediction_local
+ceph config set global device_failure_prediction_mode local
+ceph device ls
+ceph device predict-life-expectancy QEMU_QEMU_HARDDISK_2aea8810-7188-4a2b-9209-bfd7a3be58fd
