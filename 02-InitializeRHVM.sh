@@ -34,7 +34,7 @@ ansible-playbook -i ~/.inventory 01-uploadImage.yml
 ansible-playbook -i ~/.inventory 02-uploadISO.yml
 #create a vm based on rh8.3
 ansible-playbook -i ~/.inventory 03-vmFromImage.yml -e VMName=Template8.3 -e VMMemory=2GiB -e VMCore=1 \
--e ImageName=rhel-8.3-x86_64-kvm.qcow2 -e HostName=template8.3.myhost.com
+-e ImageName=rhel-8.3-x86_64-kvm.qcow2 -e HostName=template8.3.myhost.com -e VMTimeZone=Etc/GMT
 #create a tempalate based on previous machine
 ansible-playbook -i ~/.inventory 04-create-template.yml -e VMName=Template8.3 -e VMTempate=Template8.3
 #create a server for idm server baed on previous template
