@@ -78,13 +78,13 @@ compute:
   hyperthreading: Enabled
   name: worker
   platform: {}
-  replicas: 1
+  replicas: 3
 controlPlane:
   architecture: amd64
   hyperthreading: Enabled
   name: master
   platform: {}
-  replicas: 1
+  replicas: 3
 metadata:
   creationTimestamp: null
   name: openshift01
@@ -126,6 +126,7 @@ EOF
 #export OPENSHIFT_INSTALL_OS_IMAGE_OVERRIDE=templateName
 #unset SSH_AUTH_SOCK
 openshift-install create install-config --dir=/opt/OpenShift/
+#openshift-install create ignition-configs  --dir=/opt/OpenShift/
 openshift-install create cluster --dir=/opt/OpenShift --log-level=info
 
 #openshift-install wait-for bootstrap-complete --dir=/opt/OpenShift --log-level=debug
@@ -203,11 +204,19 @@ pullSecret: "{"auths":{"cloud.openshift.com":{"auth":"b3BlbnNoaWZ0LXJlbGVhc2UtZG
 sshKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDKXkpTjpu0y4mQHOzWW1+grXIxcR9sIgEc0nR4WUOh6+YJL1bLfjrJMDWUmlLh5OZmcxVmTK5dBAkJqewAFqOx/WHFREP14he0/L0uujhnhtUqgP4xYC1BYXTZ1FGFAgpgWDFbQ7dIbUrvRca3ezdY2mKFYz2BkCeCCcxKiEq5PYnpbPxgTGHaIwfO8DFVlcVFR2g/OaWok1LeYm9ZidkWviMUJbILMJF9R3KUcOITz+zOp5+tXlGKA65jJH1R77CnQ3Ly3Tc6R4lhDfGV2RFx+kwCIwzq3lJoGFtk7WH81cnHICmSrW/IzAD8r6xnV8eGyyogLQG5Mw0KfJCvmKLrKaZXtF+HS7GDHOfI5RbnyzRW6q5sJ5dyUb+mtPlbixGE7gn5HWOF/L025sX5ddDnKXn2RstjE1jjhex7BZr9tFSIVwLLsWMJW5dSDF6Fb3yqPWWgMlUWxkdj5sTzV3xzVST6WK0kDbuK3t+03KVzRvkTEjfzl3CGd1AMX2nj0xNkDZuofxeEFj1IJTQqZWNI+8Ti4JlDX6nU05vUmSbEGfXrVkkJvcQLEutxJi+FvYJ85VAM+E5DAp2++jOMlELo3shI9t0oRWofj+VDA0gp2No7T+b9qAY5z/1uEzzMF+aSFR9yxY4swb5fNdHfCfn5UYjyxnbtBEqznu6iXazZ+w== root@helper.myhost.com"
 EOF
 
+time="2021-03-26T22:20:50+04:30" level=debug msg="Time elapsed per stage:"
+time="2021-03-26T22:20:50+04:30" level=debug msg="    Infrastructure: 4m9s"
+time="2021-03-26T22:20:50+04:30" level=debug msg="Bootstrap Complete: 22m58s"
+time="2021-03-26T22:20:50+04:30" level=debug msg="               API: 1m20s"
+time="2021-03-26T22:20:50+04:30" level=debug msg=" Bootstrap Destroy: 34s"
+time="2021-03-26T22:20:50+04:30" level=debug msg=" Cluster Operators: 38m9s"
+time="2021-03-26T22:20:50+04:30" level=info msg="Time elapsed: 1h6m2s"
+
+
 INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/opt/OpenShift/auth/kubeconfig'
 INFO Access the OpenShift web-console here: https://console-openshift-console.apps.openshift01.myhost.com
-INFO Login to the console with user: "kubeadmin", and password: "ccVBD-XeEQA-hdcK2-aNSyT"
-DEBUG Time elapsed per stage:
-DEBUG Cluster Operators: 14m0s
-INFO Time elapsed: 14m0s
+INFO Login to the console with user: "kubeadmin", and password: "VPKEY-VnBpr-BENwL-uCVhM"
+INFO Time elapsed: 1h6m2s
+
 
 '
