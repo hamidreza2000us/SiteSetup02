@@ -217,6 +217,56 @@ INFO To access the cluster as the system:admin user when using 'oc', run 'export
 INFO Access the OpenShift web-console here: https://console-openshift-console.apps.openshift01.myhost.com
 INFO Login to the console with user: "kubeadmin", and password: "VPKEY-VnBpr-BENwL-uCVhM"
 INFO Time elapsed: 1h6m2s
-
-
 '
+
+###################################################
+
+htpasswd -c -b users.htpasswd hamid Iahoora@123
+htpasswd -b users.htpasswd ali ahoora
+htpasswd -b -B users.htpasswd developer developer
+
+oc create secret generic localusers --from-file htpasswd=./users.htpasswd -n openshift-config
+
+oc get oauth cluster -o yaml > oauth.yaml
+vi oauth.yaml
+########################
+spec:
+  identityProviders:
+  - htpasswd:
+      fileData:
+        name: localusers
+    mappingMethod: claim
+    name: myusers
+    type: HTPasswd
+########################
+oc replace -f oauth.yaml
+oc get pods -n openshift-authentication
+
+oc adm policy add-cluster-role-to-user cluster-admin hamid
+oc extract secret/localusers -n openshift-config --to ./ext --confirm
+oc set data secret/localusers --from-file ext/htpasswd -n openshift-config
+oc delete secret localusers -n openshift-config
+oc login
+oc delete user --all
+oc delete identity --all
+
+###################################################
+oc new-project authorization-secrets3
+oc create secret generic mysql --from-literal user=myuser --from-literal password=redhat123 --from-literal database=test_secrets --from-literal hostname=mysql
+oc new-app --name mysql --docker-image registry.access.redhat.com/rhscl/mysql-57-rhel7
+oc set env deployment/mysql --from secret/mysql --prefix MYSQL_
+oc set volume deployment/mysql --add --type secret --mount-path /run/secrets/mysql --secret-name mysql
+oc new-app --name quotes --docker-image quay.io/redhattraining/famous-quotes:2.1
+oc set env deployment/quotes --from secret/mysql --prefix QUOTES_
+oc expose service/quotes
+watch -n3 curl -s quotes-authorization-secrets3.apps.openshift01.myhost.com/status
+
+##################################################
+
+oc get pod  mysql-77cb576675-cdhj8 -o yaml | oc adm policy scc-subject-review -f -
+oc create sa gitlab-sa
+oc adm policy add-scc-to-user anyuuid -z gitlab-sa
+oc set serviceaccount deployment/mysql gitlab-sa
+##################################################
+
+
