@@ -78,7 +78,7 @@ compute:
   hyperthreading: Enabled
   name: worker
   platform: {}
-  replicas: 3
+  replicas: 0
 controlPlane:
   architecture: amd64
   hyperthreading: Enabled
@@ -219,6 +219,10 @@ INFO Login to the console with user: "kubeadmin", and password: "VPKEY-VnBpr-BEN
 INFO Time elapsed: 1h6m2s
 '
 
+oc get storageclasses
+oc set volumes deployment/httpd --add --name http-storage --type pvc --claim-class ovirt-csi-sc --claim-mode rwo --claim-size 10G --claim-name http-storgae01 --mount-path /var/www/html
+oc get pvc
+oc get pv
 ###################################################
 
 htpasswd -c -b users.htpasswd hamid Iahoora@123
@@ -269,4 +273,75 @@ oc adm policy add-scc-to-user anyuuid -z gitlab-sa
 oc set serviceaccount deployment/mysql gitlab-sa
 ##################################################
 
+oc create route edge https --service=service/httpd --hostname myhost.apps.openshift01.myhost.com
+oc extract secrets/router-ca --keys tls.crt -n openshift-ingress-operator
+curl -I -v --cacert tls.crt https://myhost.apps.openshift01.myhost.com
 
+###################################################
+oc new-app --name test --docker-image quay.io/redhattraining/hello-world-nginx:v1.0
+oc get networkpolicies
+oc create -f policy.yaml
+oc label namespaces myproject02 project=myproject02
+oc label pod test2-869c5d654-j8j5c role=client
+oc get pods  --show-labels
+oc get pods  -L role
+oc rsh test2-869c5d654-j8j5c curl 10.129.2.228:8080
+  
+###################################################
+ 
+oc get machinesets.machine.openshift.io -n openshift-machine-api 
+oc adm new-project demo --node-selector "tier=1"
+oc scale --replicas 3 deployment/myapp
+###################################################
+spce:
+  nodeSelector:
+    env: dev
+  containers:
+    resources:
+      requests:
+        cpu: "10m"
+        memory: 20Mi
+      limits:
+        cpu: "80m"
+        memory: 100Mi1
+
+oc set resources deployment hello-world-nginx --requests cpu=10m,memory=20Mi --limits cpu=80m,memory=100Mi
+oc adm top nodes 
+oc create quota dev-quota --hard services=10,cpu=1,memory=2Gi,limits.cpu=1,limits.memory=2Gi
+
+oc get resourcequota
+oc describe quota
+
+oc describe limitrange dev-limits
+
+oc adm new-project myproject --node-selector='type=user-node,region=east'
+oc patch deployment/myapp --patch '{"spec":{"template":{"spec":{"nodeSelector":{"env":"dev"}}}}}'
+oc adm create-bootstrap-project-template -o yaml > /tmp/project-template.yaml
+oc create clusterquota user-qa --project-annotation-selector openshift.io/requester=qa --hard pods=12,secrets=20
+####################################################
+
+oc autoscale dc/hello --min 1 --max 10 --cpu-percent 80
+oc get hpa
+
+oc project openshift-machine-api
+oc get machinesets.machine.openshift.io
+oc scale --replicas=1 machineset openshift01-xlt7d-worker-0
+
+######################################################
+oc process jenkins-persistent --parameters -n openshift
+oc new-app --template jenkins-persistent
+oc adm policy add-cluster-role-to-user self-provisioner -z jenkins -n 3scale
+
+git clone https://github.com/sohooo/gitops-deploy.git
+git clone https://github.com/hamidreza2000us/gitops-deploy.git
+#cp app.js Jenkinsfile package.json gitops-deploy/
+cd gitops-deploy/
+git status
+git add .
+git status
+git commit -m 'push'
+git push
+#edit openshift api address
+vim Jenkinsfile
+######################################################
+ 
