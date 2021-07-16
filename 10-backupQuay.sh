@@ -5,14 +5,12 @@
 #yum install -y podman jq
 yum install -y jq
 sourceRegistry="quay.myhost.com"
-username=hamid
+username=admin
 password=Iahoora@123
 
 sudo yum -y install sshpass
 sudo mkdir -p /etc/docker/certs.d/quay.myhost.com/
-sudo sshpass -p ahoora  scp -o  StrictHostKeyChecking=no quay.myhost.com:/etc/docker/certs.d/quay.myhost.com/ca.crt /etc/docker/certs.d/quay.myhost.com/
-sudo update-ca-trust
-
+sudo sshpass -p Iahoora@123  scp -o  StrictHostKeyChecking=no quay.myhost.com:/var/quay/config/ssl.crt /etc/docker/certs.d/quay.myhost.com/ca.crtsudo update-ca-trust
 podman login $sourceRegistry -u ${username} -p ${password}
 
 #mkdir /root/backup
@@ -31,7 +29,15 @@ do
   done
 done
 
+#make an organization with name rhceph
 #restore backup to quay
-for i in $(ls) ; do image=$(echo $i | awk -F_ '{print $1":"$2}' | sed 's/.tar.gz//') ; podman load -i $i ; done
-for i in $(podman images | tail -n +2 |  awk '{print $1":"$2}' | grep quay.myhost.com ) ; do echo $i; podman push $i ;  done
+for i in $(ls) 
+do 
+  image=$(echo $i | awk -F_ '{print $1":"$2}' | sed 's/.tar.gz//') 
+  podman load -i $i 
+done
+for i in $(podman images | tail -n +2 |  awk '{print $1":"$2}' | grep quay.myhost.com ) 
+do 
+  podman push $i  
+done
 

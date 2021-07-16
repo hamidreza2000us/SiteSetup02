@@ -109,8 +109,8 @@ ceph_conf_overrides:
   global:
     mon_osd_allow_primary_affinity: 1
     mon_clock_drift_allowed: 0.5
-    osd_pool_default_size: 2
-    osd_pool_default_min_size: 1
+    osd_pool_default_size: 3
+    osd_pool_default_min_size: 2
     mon_pg_warn_min_per_osd: 0
     mon_pg_warn_max_per_osd: 0
     mon_pg_warn_max_object_skew: 0
@@ -219,7 +219,7 @@ s3cmd --configure --access_key=12345 --secret_key=67890 --no-ssl  \
 --host=ceph01.myhost.com:8080 --host-bucket="ceph01.myhost.com:8080/%(bucket)" --no-encrypt
 
 s3cmd mb s3://mybucket01
-s3cmd put --acl-public .bash_history s3://hamids3
+s3cmd put --acl-public .bash_history s3://mybucket01
 s3cmd get s3://hamids3/install.post.log
 
 yum -y install perl-Digest-HMAC.noarch perl-libs perl-interpreter

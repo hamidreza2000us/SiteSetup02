@@ -150,9 +150,33 @@ EOF
 hammer template create --name "Kickstart default custom post" --type snippet --file /tmp/post --organization-id 1
 hammer template create --name "Kickstart scap custom post" --type snippet --file /tmp/post --organization-id 1
 
-hammer template dump --name "Kickstart default" > /tmp/kickdefaulttemplate
-sed  -i '/^skipx.*/a \\n%addon org_fedora_oscap\ncontent-type = scap-security-guide\nprofile = pci-dss\n%end' /tmp/kickdefaulttemplate
-hammer template create --file /tmp/kickdefaulttemplate --name "Kickstart scap" --type "provision" --organization-id 1
+#because of a bug in satellite 6.8 with bonded interfaces
+#########################################################
+hammer template dump --name "Kickstart default" > /tmp/ks-default
+cat > /tmp/ks-default-bond << EOF
+--- /tmp/ks-default     2021-04-17 19:11:14.518600180 -0400
++++ /tmp/ks-default-bond        2021-04-17 19:11:48.084600180 -0400
+@@ -143,8 +143,9 @@
+
+   # bond
+   if iface.bond? && rhel_compatible && os_major >= 6
+-    network_options.push("--bondslaves=#{iface.attached_devices_identifiers}")
+-    network_options.push("--bondopts=mode=#{iface.mode};#{iface.bond_options.tr(' ', ';')}")
++    bond_slaves = iface.attached_devices_identifiers.join(',')
++    network_options.push("--bondslaves=#{bond_slaves}")
++    network_options.push("--bondopts=mode=#{iface.mode};#{iface.bond_options.tr('', ';')}")
+   end
+
+   # VLAN (only on physical is recognized)
+EOF
+
+patch /tmp/ks-default /tmp/ks-default-bond
+hammer template create --file /tmp/ks-default --name "Kickstart default-bond" --type "provision" --organization-id 1
+hammer template add-operatingsystem --name "Kickstart default-bond" --operatingsystem "$OS $major.$minor"
+
+#########################################################
+sed  -i '/^skipx.*/a \\n%addon org_fedora_oscap\ncontent-type = scap-security-guide\nprofile = pci-dss\n%end' /tmp/ks-default
+hammer template create --file /tmp/ks-default --name "Kickstart scap" --type "provision" --organization-id 1
 hammer template add-operatingsystem --name "Kickstart scap" --operatingsystem "$OS $major.$minor"
 #osid=$(hammer --csv os list | grep "$OS $major.$minor," | awk -F, {'print $1'})
 #SATID=$(hammer --csv template list  | grep "provision" | grep ",Kickstart scap," | cut -d, -f1)
