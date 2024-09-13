@@ -1,0 +1,86 @@
+---
+#To run this script
+#1-use the rhvh host which has ansible already installed
+#2-Create a .inventory file with following command (change the hostname to mathc RHVM Server)
+#cat > .inventory << EOF
+#[hosts]
+#rhvm.myhost.com
+#EOF
+#
+#3-Then create a password file (not vaulted!) with following command
+#cat > ovirt_variables.yml << EOF
+#RHVMURL: "https://rhvm.myhost.com/ovirt-engine/api"
+#RHVMUser: "admin@internal"
+#RHVMPass: "ahoora"
+#VMName: "myvm01"
+#VMComment: "My VM Comments"
+#VMDescription: "VM Description"
+#VMTimeZone: "Asia/Tehran"
+#VMMemory: "2GiB"
+#VMSocket: 2
+#VMCore: 2
+##common os types are: rhel_8x64, rhel_7x64, windows_2016x64, windows_10
+#VMOS: rhel_7x64
+#VMDiskSize: 10GiB
+#VMStorageDomain: hosted_storage
+#VMNetProfile: ovirtmgmt
+#VMNetNetwork: ovirtmgmt
+#
+#EOF
+#
+#4-Manually change the hostname and password in above files to match your requirements
+#(maybe ssh-copy-id is required!!
+#Then run the following command
+#ansible-playbook -i .inventory site.yml
+- name: test ansible playbook
+  hosts: rhvm.myhost.com
+  tasks:
+  - include_vars: ovirt_password.yml
+
+  - name: Obtain SSO token with using username/password credentials
+    ovirt_auth:
+      url: https://rhvm.myhost.com/ovirt-engine/api
+      username: admin@internal
+      ca_file: /etc/pki/ovirt-engine/ca.pem
+      password: "{{ ovirt_password }}"
+
+
+  - ovirt_vm:
+      auth: "{{ ovirt_auth }}"
+      state: present
+      cluster: Default
+      name: myvm
+      comment: myvm comment
+      description: myvm Description
+      timezone: Asia/Tehran
+      soundcard_enabled: no
+      memory: 2GiB
+      cpu_cores: 2
+      cpu_sockets: 2
+      cpu_shares: 1024
+      type: server
+      operating_system: rhel_7x64
+      nics:
+        - name: nic1
+
+  - ovirt_disk:
+      auth: "{{ ovirt_auth }}"
+      name: myvm_disk
+      vm_name: myvm
+      size: 10GiB
+      format: cow
+      bootable: yes
+      interface: virtio_scsi
+      storage_domain: hosted_storage
+
+  - ovirt_nic:
+      auth: "{{ ovirt_auth }}"
+      state: present
+      vm: myvm
+      name: nic1
+      interface: virtio
+      profile: ovirtmgmt
+      network: ovirtmgmt
+
+
+...
