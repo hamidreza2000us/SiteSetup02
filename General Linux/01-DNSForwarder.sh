@@ -6,20 +6,26 @@
 #don't forget to 1- mount the installation DVD and 2- don't run any DHCP service in the current network
 #do the following manually
 #ip a sh
-#systemctl stop NetworkManager
 #ip a a 192.168.13.10/24 dev ens160
 #ip route add default via 192.168.13.2 dev ens160
-#echo "nameserver 192.168.13.2" >> /etc/resolve.conf
 #-----------------------------------
 #ssh to host
 #upload Site01.tar to /root/
+if [ -f ~/Site01.tar ] 
+then 
+  tar -xvf ~/Site01.tar
+  #copy and paste RH8-BaseSystem.sh to /root/
+  sed -i '1s/^.*#/#/;s/\r$//' ~/Site01/RH8-BaseSystem.sh
+  bash ~/Site01/RH8-BaseSystem.sh
+  #copy RH82-DNSMasqSetup.sh to /root/
+  sed -i '1s/^.*#/#/;s/\r$//' ~/Site01/RH82-DNSMasqSetup.sh
+  bash ~/Site01/RH82-DNSMasqSetup.sh
+  #copy RH82-HTTPDSetup.sh
+  sed -i '1s/^.*#/#/;s/\r$//' ~/Site01/RH82-HTTPDSetup.sh
+  bash ~/Site01/RH82-HTTPDSetup.sh
+  mv Site01 /srv/myhost/www/
+  restorecon -Rv /srv/myhost/www/
+fi
 
-yum -y install git
-git clone https://github.com/hamidreza2000us/sitesetup.git
 
-bash ~sitesetup/RH7-BaseSystem.sh 
 
-bash ~sitesetup/RH82-DNSMasqSetup.sh
-
-#now go to step two and run 02-IDMHostsetup.sh on second server
-#Then come back to this server and start 03-Foreman-P2
