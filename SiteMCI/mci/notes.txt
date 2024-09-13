@@ -1,0 +1,23 @@
+tasks:
+
+
+problems:
+ipa
+kinit doesn't provide password less authentication for windows users
+ipa doesn't have valid ssl
+central home directory
+
+satellite:
+install repo for ceph3
+install repo for rh7.9 openstack13 and openstack16
+add rh7 to the repo
+add partition table custom to the available list and also default
+
+network:
+#ntp port not available to the idm servers
+
+
+
+
+
+

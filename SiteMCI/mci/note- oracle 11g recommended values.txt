@@ -1,0 +1,144 @@
+#####################################11g sysctl##############################################3
+# oracle-rdbms-server-11gR2-preinstall setting for fs.file-max is 6815744
+fs.file-max = 6815744
+
+# oracle-rdbms-server-11gR2-preinstall setting for kernel.sem is '250 32000 100 128'
+kernel.sem = 250 32000 100 128
+
+# oracle-rdbms-server-11gR2-preinstall setting for kernel.shmmni is 4096
+kernel.shmmni = 4096
+
+# oracle-rdbms-server-11gR2-preinstall setting for kernel.shmall is 2097152 on i386
+kernel.shmall = 1073741824
+
+# oracle-rdbms-server-11gR2-preinstall setting for kernel.shmmax is 4294967295 on i386
+kernel.shmmax = 4398046511104
+
+# oracle-rdbms-server-11gR2-preinstall setting for kernel.panic_on_oops is 1 per Orabug 19212317
+kernel.panic_on_oops = 1
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.core.rmem_default is 262144
+net.core.rmem_default = 262144
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.core.rmem_max is 4194304
+net.core.rmem_max = 4194304
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.core.wmem_default is 262144
+net.core.wmem_default = 262144
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.core.wmem_max is 1048576
+net.core.wmem_max = 1048576
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.ipv4.conf.all.rp_filter is 2
+net.ipv4.conf.all.rp_filter = 2
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.ipv4.conf.default.rp_filter is 2
+net.ipv4.conf.default.rp_filter = 2
+
+# oracle-rdbms-server-11gR2-preinstall setting for fs.aio-max-nr is 1048576
+fs.aio-max-nr = 1048576
+
+# oracle-rdbms-server-11gR2-preinstall setting for net.ipv4.ip_local_port_range is 9000 65500
+net.ipv4.ip_local_port_range = 9000 65500
+
+##########################################19c sysctl################################################
+
+# oracle-database-preinstall-19c setting for fs.file-max is 6815744
+fs.file-max = 6815744
+
+# oracle-database-preinstall-19c setting for kernel.sem is '250 32000 100 128'
+kernel.sem = 250 32000 100 128
+
+# oracle-database-preinstall-19c setting for kernel.shmmni is 4096
+kernel.shmmni = 4096
+
+# oracle-database-preinstall-19c setting for kernel.shmall is 1073741824 on x86_64
+kernel.shmall = 1073741824
+
+# oracle-database-preinstall-19c setting for kernel.shmmax is 4398046511104 on x86_64
+kernel.shmmax = 4398046511104
+
+# oracle-database-preinstall-19c setting for kernel.panic_on_oops is 1 per Orabug 19212317
+kernel.panic_on_oops = 1
+
+# oracle-database-preinstall-19c setting for net.core.rmem_default is 262144
+net.core.rmem_default = 262144
+
+# oracle-database-preinstall-19c setting for net.core.rmem_max is 4194304
+net.core.rmem_max = 4194304
+
+# oracle-database-preinstall-19c setting for net.core.wmem_default is 262144
+net.core.wmem_default = 262144
+
+# oracle-database-preinstall-19c setting for net.core.wmem_max is 1048576
+net.core.wmem_max = 1048576
+
+# oracle-database-preinstall-19c setting for net.ipv4.conf.all.rp_filter is 2
+net.ipv4.conf.all.rp_filter = 2
+
+# oracle-database-preinstall-19c setting for net.ipv4.conf.default.rp_filter is 2
+net.ipv4.conf.default.rp_filter = 2
+
+# oracle-database-preinstall-19c setting for fs.aio-max-nr is 1048576
+fs.aio-max-nr = 1048576
+
+# oracle-database-preinstall-19c setting for net.ipv4.ip_local_port_range is 9000 65500
+net.ipv4.ip_local_port_range = 9000 65500
+
+######################################limits 11g###############################################
+
+# oracle-rdbms-server-11gR2-preinstall setting for nofile soft limit is 1024
+oracle soft nofile 1024
+
+# oracle-rdbms-server-11gR2-preinstall setting for nofile hard limit is 65536
+oracle hard nofile 65536
+
+# oracle-rdbms-server-11gR2-preinstall setting for nproc soft limit is 16384
+# refer orabug15971421 for more info.
+oracle soft nproc 16384
+
+# oracle-rdbms-server-11gR2-preinstall setting for nproc hard limit is 16384
+oracle hard nproc 16384
+
+# oracle-rdbms-server-11gR2-preinstall setting for stack soft limit is 10240KB
+oracle soft stack 10240
+
+# oracle-rdbms-server-11gR2-preinstall setting for stack hard limit is 32768KB
+oracle hard stack 32768
+
+oracle hard memlock 237257938
+
+# oracle-rdbms-server-11gR2-preinstall setting for memlock hard limit is maximum of 128GB on x86_64 or 3GB on x86 OR 90 % of RAM
+oracle soft memlock 237257938
+#######################################19c limits##########################################
+# oracle-database-preinstall-19c setting for nofile soft limit is 1024
+oracle   soft   nofile    1024
+
+# oracle-database-preinstall-19c setting for nofile hard limit is 65536
+oracle   hard   nofile    65536
+
+# oracle-database-preinstall-19c setting for nproc soft limit is 16384
+# refer orabug15971421 for more info.
+oracle   soft   nproc    16384
+
+# oracle-database-preinstall-19c setting for nproc hard limit is 16384
+oracle   hard   nproc    16384
+
+# oracle-database-preinstall-19c setting for stack soft limit is 10240KB
+oracle   soft   stack    10240
+
+# oracle-database-preinstall-19c setting for stack hard limit is 32768KB
+oracle   hard   stack    32768
+
+# oracle-database-preinstall-19c setting for memlock hard limit is maximum of 128GB on x86_64 or 3GB on x86 OR 90 % of RAM
+oracle   hard   memlock    237257938
+
+# oracle-database-preinstall-19c setting for memlock soft limit is maximum of 128GB on x86_64 or 3GB on x86 OR 90% of RAM
+oracle   soft   memlock    237257938
+
+# oracle-database-preinstall-19c setting for data soft limit is 'unlimited'
+oracle   soft   data    unlimited
+
+# oracle-database-preinstall-19c setting for data hard limit is 'unlimited'
+oracle   hard   data    unlimited
+

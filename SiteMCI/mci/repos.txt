@@ -1,0 +1,38 @@
+#Cent7 Packages
+http://mirror.centos.org/centos/7/os/x86_64/
+#http://mirror.centos.org/centos/7/os/x86_64/RPM-GPG-KEY-CentOS-7
+http://mirror.centos.org/centos/7/messaging/x86_64/qpid-dispatch/
+http://mirror.centos.org/centos/7/messaging/x86_64/qpid-proton/
+http://mirror.centos.org/centos/7/opstools/x86_64/
+http://mirror.centos.org/centos/7/sclo/x86_64/rh/
+http://mirror.centos.org/centos/7/extras/x86_64/
+http://mirror.centos.org/centos/7/centosplus/x86_64/
+http://mirror.centos.org/centos/7/configmanagement/x86_64/ansible-29/
+http://mirror.centos.org/centos/7/dotnet/x86_64/Packages/
+#EPEL 7
+https://dl.fedoraproject.org/pub/epel/7Server/x86_64/
+#https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7Server
+#Zabbix-el7
+https://repo.zabbix.com/zabbix/5.4/rhel/7/x86_64/
+#
+#
+#kuber-el7
+https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+#ELK-el7
+https://artifacts.elastic.co/packages/7.x/yum
+#https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+#Cent8 Packages
+http://mirror.centos.org/centos/8/BaseOS/
+http://mirror.centos.org/centos/8/AppStream/
+http://mirror.centos.org/centos/8/HighAvailability/x86_64/os/
+http://mirror.centos.org/centos/8/PowerTools/x86_64/os/
+http://mirror.centos.org/centos/8/centosplus/x86_64/os/
+http://mirror.centos.org/centos/8/extras/x86_64/os/
+http://mirror.centos.org/centos/8/messaging/x86_64/qpid-proton/
+http://mirror.centos.org/centos/8/messaging/x86_64/rabbitmq-38/
+#EPEL8
+https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/
+https://dl.fedoraproject.org/pub/epel/8/Modular/x86_64/
+#Zabbix-el8
+https://repo.zabbix.com/zabbix/5.4/rhel/8/x86_64/

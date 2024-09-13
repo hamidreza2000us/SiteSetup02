@@ -1,0 +1,39 @@
+[hosts]
+172.20.29.141
+172.20.29.142
+
+[backend-setup]
+devices=/dev/sdb
+vgs=vg1
+pools=pool1
+lvs=lv1
+mountpoints=/rhgs/brick1
+brick_dirs=/rhgs/brick1/brick
+# lvs=lv_ctdb:1G,lv_engine:50G,lv_data:100%FREE
+# mountpoints=/rhgs/ctdb,/rhgs/engine,/rhgs/data
+
+[yum]
+action=install
+repolist=
+gpgcheck=no
+update=no
+packages=samba,samba-client,glusterfs-server,ctdb
+
+[firewalld]
+action=add
+ports=54321/tcp,5900/tcp,5900-6923/tcp,5666/tcp,4379/tcp
+services=glusterfs,samba,high-availability
+
+[volume]
+action=create
+volname=ctdb1
+transport=tcp
+replica_count=2
+force=yes
+#smb=yes
+#smb_mountpoint=/mnt/smb
+
+[ctdb]
+action=setup
+public_address=172.20.29.146/27 ens192
+volname=ctdb1
