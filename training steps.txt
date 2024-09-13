@@ -1,0 +1,50 @@
+HPGmo-QYjTZ-3mewV-7yKHT
+
+https://redhatgov.io/workshops/openshift_4_101/lab2-byocontainer/ = 90% path problem
+create new project
+run an app with name sonatype/nexus:oss
+expose it (expose /nexus)
+see and check 
+check imagestream
+delete app base on selector
+
+https://redhatgov.io/workshops/openshift_4_101/lab3-s2i/ = 90% excute inside pod
+create new project
+deploy app from source https://github.com/RedHatGov/openshift-workshops.git --context-dir=dc-metro-map
+expose it
+check build
+change environemt to -e BEERME=true
+check env from inside the pod
+change github start new deploy and then rollback
+
+
+https://redhatgov.io/workshops/openshift_4_101/lab6-replicationrecovery/
+scale application to 4
+and reduce to 1
+
+https://redhatgov.io/workshops/openshift_4_101/lab6.2-replicationrecovery/
+inside application kill all process
+
+https://redhatgov.io/workshops/openshift_4_101/lab7-labels/ 
+add label
+testdate=4.14.2020 testedby=mylastname
+
+https://redhatgov.io/workshops/openshift_4_101/lab8-cicd/
+create new project cicd-0
+setup jenkins-ephemeral
+run sample application https://raw.githubusercontent.com/openshift/origin/master/examples/jenkins/pipeline/nodejs-sample-pipeline.yaml
+start build from commaand line
+check it inside jenkins-ephemeral
+
+https://redhatgov.io/workshops/openshift_4_101/lab9-bluegreen/
+setup new project bluegreen-0
+deploy dc-map as green
+expose the service
+change the source inside fork
+deploy antoher app blue
+change routing and observe the effect
+
+
+
+
+delete all based on selector and delete all related secrets

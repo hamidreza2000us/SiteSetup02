@@ -1,0 +1,64 @@
+oc login -u developer -p redhat
+ oc project adoptapup
+ oc get pods
+ oc get pods -n adoptapup-news
+ sh ~/DO328/labs/comprehensive-review/check-mongo.sh
+ #sh ~/DO328/labs/comprehensive-review/load-mongo.sh
+ 
+ 
+ cd /home/student/DO328/solutions/comprehensive-review/
+ oc create -f gateway.yaml
+ 
+ oc create -f adoption-service.yaml
+ 
+ 
+ oc get pods
+ GW_URL=$(oc get route istio-ingressgateway \
+ -n istio-system -o jsonpath='{.spec.host}')
+ firefox  http://${GW_URL}/frontend  &
+ 
+ oc get route news -n adoptapup-news
+ oc create -f news-serviceentry.yaml
+ 
+ oc create -f frontend-service-v2.yaml
+ oc get pods
+ oc create -f frontend-dest-rule.yaml
+ 
+ oc apply -f frontend-vs-v2.yaml
+ 
+  oc create -f animal-service-v2.yaml
+  oc get pods
+  oc create -f animal-dest-rule.yaml
+  oc apply -f animal-vs-v2.yaml
+  oc get pods -o name | \
+  grep animal-v2 | xargs oc logs -c animal-v2
+  
+  oc apply -f shelter-vs-v2.yaml
+  
+  oc apply -f adoption-vs-v2.yaml
+  
+  oc create -f adoption-dr.yaml
+  
+   oc create -f notification-pool.yaml
+   
+   
+   oc create serviceaccount animal-sa
+   oc create serviceaccount shelter-sa
+   oc set serviceaccount deployment animal-v1 animal-sa
+   oc set serviceaccount deployment shelter shelter-sa
+   
+   oc get pods
+   oc create -f mongodb-security-policy.yaml
+   
+   
+   
+   
+   
+   
+  
+  
+  
+  
+  
+  
+ 
