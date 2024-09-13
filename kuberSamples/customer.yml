@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: customer
+  template:
+    metadata:
+      labels:
+        app: customer
+        tier: application
+      annotations:
+        changecause: test
+    spec:
+      containers:
+      - name: customer
+        image:  amigoscode/kubernetes:customer-v1
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+          requests:
+            memory: "96Mi"
+            cpu: "250m"
+
+        livenessProbe:
+          initialDelaySeconds: 5
+          failureThreshold: 3
+          periodSeconds: 5
+          timeoutSeconds: 1
+          httpGet:
+            path: /health
+            port: 8080
+        readinessProbe:
+          initialDelaySeconds: 5
+          failureThreshold: 3
+          periodSeconds: 5
+          timeoutSeconds: 1
+          httpGet:
+            path: /health
+            port: 8080
+
+        env:
+          - name: ORDER_SERVICE
+            value: 10.97.111.241:8081
+#          - name: KILL_IN_SECONDS
+#            value: "30"
+        ports:
+        - containerPort: 8080
+
+#kubectl port-forward deploy/customer 8080:8080
+#http://localhost:8080/api/v1/customer
+
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer
+spec:
+  type: ClusterIP
+  selector:
+    app: customer
+  ports:
+  - port: 80
+    targetPort: 8080
+   

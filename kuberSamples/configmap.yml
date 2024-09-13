@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap01
+data:
+  hamid01: hamidkey01
+  hamid02: hamidkey02
+
+---
+apiVersion: v1 
+kind: Namespace
+metadata: 
+  name: ns01
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret01
+type: Opaque
+data:
+  sec01: bXlwYXNzd29yZAo=
+
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap02
+data:
+  myfile: |
+    fsafsadfasfas
+    dsafasdfasdfsa
+    adfsadfsadfadsfas
+    asdfasdfasdfasfsa
+    fdsafdsfsdfsadfas
+    1111111111222222
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: configmapapp
+spec:
+  selector:
+    matchLabels:
+      app: configmapapp
+  template:
+    metadata:
+      labels:
+        app: configmapapp
+    spec:
+#      imagePullSecrets:
+#        - name: mysecret01
+      volumes:
+        - name: myvol01
+          configMap:
+            name: configmap02
+        - name: myvol02
+          projected:
+            sources:
+              - configMap:
+                  name: configmap01
+              - configMap:
+                  name: configmap02
+      containers:
+      - name: configmapapp
+        image: busybox
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+          - mountPath: /ddd
+            name: myvol01
+          - mountPath: /aaa
+            name: myvol02
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "env && sleep 3600"
+        env:
+          - name: value01
+            valueFrom:
+              configMapKeyRef:
+                name: configmap01
+                key: hamid01
+          - name: value02
+            valueFrom:
+              configMapKeyRef:
+                name: configmap01
+                key: hamid02
+          - name: value03
+            valueFrom:
+              secretKeyRef:
+                name: mysecret01
+                key: sec01
+
+
